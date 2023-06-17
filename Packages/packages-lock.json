@@ -1,5 +1,11 @@
 {
   "dependencies": {
+    "com.htw.soundinstancemanager": {
+      "version": "file:SoundInstanceManager",
+      "depth": 0,
+      "source": "embedded",
+      "dependencies": {}
+    },
     "com.unity.collab-proxy": {
       "version": "2.0.3",
       "depth": 0,

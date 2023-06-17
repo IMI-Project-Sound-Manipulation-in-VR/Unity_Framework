@@ -16,4 +16,4 @@ MonoBehaviour:
   tempo: 1
   pitch: 1
   volume: 1
-  level: {x: -1, y: 1}
+  level: {x: 0, y: 0.59804}
