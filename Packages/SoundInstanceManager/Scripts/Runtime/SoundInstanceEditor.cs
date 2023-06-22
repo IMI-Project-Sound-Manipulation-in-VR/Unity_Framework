@@ -3,20 +3,25 @@ using FMOD.Studio;
 using UnityEngine;
 using UnityEditor;
 using System.Collections.Generic;
+using System;
+using System.Reflection;
 
 public class SoundInstanceEditor : MonoBehaviour
 {
+    [SerializeField] private MonoBehaviour script;
+    private Type scriptType; 
+    private EventReference previousEventReference;
     [SerializeField] private EventReference eventReference;
     private EventInstance eventInstance;
     private string EventName { get; set; }
     public Vector2 Level { get; set; }
-    private float Tempo { get; set; }
+    // private float Tempo { get; set; }
     private float Pitch { get; set; }
     private float Volume { get; set; }
     private SoundManagerPresetData[] presets;
     private int selectedPresetIndex;
     private int previouslySelectedPresetIndex = -1;
-    private FMODParameterDescription[] parameterDescriptions;
+    private List<FMODParameterDescription> parameterDescriptions;
     private bool showGUI;
     private bool showAdditionalParameters = true;
     private string playbackState;
@@ -28,8 +33,9 @@ public class SoundInstanceEditor : MonoBehaviour
 
     void Start()
     {
+        scriptType = script != null ? script.GetType() : null;
         eventInstance = FMODSoundManager.instance.CreateEventInstance(eventReference);
-        RetrieveEventInstanceInformation();
+        // RetrieveEventInstanceInformation();
         FMOD.ATTRIBUTES_3D attributes = RuntimeUtils.To3DAttributes(gameObject.transform);
         eventInstance.set3DAttributes(attributes);
         LoadPresets();
@@ -40,46 +46,58 @@ public class SoundInstanceEditor : MonoBehaviour
     {
         SetVolume();
         SetPitch();
+        UpdateReflectionParameters();
         UpdateAdditionalParameters();
     }
 
-    private void RetrieveEventInstanceInformation()
-    {
-        // Get the event description
-        EventDescription eventDescription;
-        eventInstance.getDescription(out eventDescription);
+    public void UpdateEventReference(){
+        if(!eventReference.Equals(previousEventReference)){
+            previousEventReference = eventReference;
+            RetrieveEventInformation();
+        }
+    }
 
-        RetrieveEventInstanceName();
-        RetrieveEventInstanceParameters(eventDescription);
+    public void RetrieveEventInformation()
+    {
+        EditorEventRef eventAsset = EventManager.EventFromPath(eventReference.Path);
+
+        RetrieveEventName(eventAsset);
+        RetrieveEventParameters(eventAsset);
+    }
+
+    private void RetrieveEventName(EditorEventRef eventAsset)
+    {
+        EventName = eventAsset.Path.Substring("event:/".Length);
+    }
+
+    private void RetrieveEventParameters(EditorEventRef eventAsset)
+    {
+        List<FMODParameterDescription> temp = new List<FMODParameterDescription>();
+        List<EditorParamRef> localParameters = eventAsset.LocalParameters;
+        foreach(EditorParamRef editorParamRef in localParameters){
+            FMODParameterDescription paramDescription = ScriptableObject.CreateInstance<FMODParameterDescription>();
+            paramDescription.SetParameterDescriptionFromStruct(editorParamRef);
+            temp.Add(paramDescription);
+        }
+        parameterDescriptions = temp;
+    }
+
+    private void UpdateReflectionParameters(){
+        if(scriptType != null){
+            foreach(FMODParameterDescription paramDescription in parameterDescriptions)
+            {
+                FieldInfo field = scriptType.GetField(paramDescription.ParameterName, BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.IgnoreCase);
+                if(field != null) {
+                    paramDescription.CurrentValue = (float) field.GetValue(script);
+                    paramDescription.Locked = true;
+                }
+            }
+        }
     }
 
     private void RetrieveEventInstanceName()
     {
         EventName = eventReference.Path.Substring("event:/".Length);
-    }
-
-    private void RetrieveEventInstanceParameters(EventDescription eventDescription)
-    {
-        int parameterCountAll;
-        eventDescription.getParameterDescriptionCount(out parameterCountAll);
-
-        List<FMODParameterDescription> descriptions = new List<FMODParameterDescription>();
-
-        for (int i = 0; i < parameterCountAll; i++)
-        {
-            // Get the parameter description
-            PARAMETER_DESCRIPTION parameterDescription;
-            eventDescription.getParameterDescriptionByIndex(i, out parameterDescription);
-
-            if((parameterDescription.flags & PARAMETER_FLAGS.READONLY) == 0) {
-                FMODParameterDescription description = ScriptableObject.CreateInstance<FMODParameterDescription>();;
-                description.SetParameterDescriptionFromStruct(eventDescription, parameterDescription);
-
-                descriptions.Add(description);
-            }
-        }
-
-        parameterDescriptions = descriptions.ToArray();
     }
 
     public void SetVolume()
@@ -150,6 +168,7 @@ public class SoundInstanceEditor : MonoBehaviour
     {
         if (eventReference.Path.Length > 0)
         {
+            MonoBehaviour[] scripts = GetComponents<MonoBehaviour>();
             showGUI = EditorGUILayout.Foldout(showGUI, eventReference.Path.Length > 0 ? eventReference.Path.Substring("event:/".Length) : "");
             
             if(showGUI)
@@ -166,7 +185,7 @@ public class SoundInstanceEditor : MonoBehaviour
 
                 // EditorGUILayout.ObjectField(eventReference, typeof(EventReference));
 
-                Tempo = EditorGUILayout.Slider("Tempo", Tempo, 0.1f, 2f);
+                // Tempo = EditorGUILayout.Slider("Tempo", Tempo, 0.1f, 2f);
                 Pitch = EditorGUILayout.Slider("Pitch", Pitch, 0.5f, 2f);
                 Volume = EditorGUILayout.Slider("Volume", Volume, 0f, 1f);
 
@@ -196,13 +215,17 @@ public class SoundInstanceEditor : MonoBehaviour
                     EditorGUI.indentLevel++;
 
                     // Display new attribute sliders
-                    for (int i = 0; i < parameterDescriptions.Length; i++)
+                    foreach(FMODParameterDescription paramDescription in parameterDescriptions)
                     {
-                        FMODParameterDescription attributeValue = parameterDescriptions[i];
-                        if((attributeValue.ParameterType & PARAMETER_FLAGS.LABELED) != 0){
-                            attributeValue.CurrentValue = EditorGUILayout.Popup(attributeValue.ParameterName, (int) attributeValue.CurrentValue, attributeValue.Labels);
+                        if( paramDescription.ParameterType == FMODUnity.ParameterType.Labeled ){
+                            paramDescription.CurrentValue = EditorGUILayout.Popup(paramDescription.ParameterName, (int) paramDescription.CurrentValue, paramDescription.Labels);
                         } else {
-                            attributeValue.CurrentValue = EditorGUILayout.Slider(attributeValue.ParameterName, attributeValue.CurrentValue, attributeValue.Minimum, attributeValue.Maximum);
+                            EditorGUI.BeginDisabledGroup(paramDescription.Locked);
+
+                            // Create the slider
+                            paramDescription.CurrentValue = EditorGUILayout.Slider(paramDescription.ParameterName, paramDescription.CurrentValue, paramDescription.Minimum, paramDescription.Maximum);
+
+                            EditorGUI.EndDisabledGroup();
                         }
                     }
 
@@ -227,7 +250,7 @@ public class SoundInstanceEditor : MonoBehaviour
             {
                 SoundManagerPresetData presetData = presets[selectedPresetIndex];
 
-                Tempo = presetData.tempo;
+                // Tempo = presetData.tempo;
                 Pitch = presetData.pitch;
                 Volume = presetData.volume;
                 Level = presetData.level;
@@ -261,6 +284,7 @@ public class SoundManagerEditor : UnityEditor.Editor
     {
         soundManager = (SoundInstanceEditor)target;
         soundManager.LoadPresets();
+        soundManager.RetrieveEventInformation();
     }
 
     public override void OnInspectorGUI()
@@ -268,6 +292,8 @@ public class SoundManagerEditor : UnityEditor.Editor
         serializedObject.Update();
 
         DrawDefaultInspector();
+
+        soundManager.UpdateEventReference();
 
         soundManager.DrawInspectorGUI();
     }
