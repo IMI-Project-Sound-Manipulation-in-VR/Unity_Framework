@@ -366,6 +366,8 @@ public class SoundManagerEditor : UnityEditor.Editor
 
         DrawDefaultInspector();
 
+        soundManager.UpdateEventReference();
+
         soundManager.DrawInspectorGUI();
     }
 }
