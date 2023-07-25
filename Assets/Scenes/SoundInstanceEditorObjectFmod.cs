@@ -138,7 +138,7 @@ public class SoundInstanceEditorObjectFmod : SoundInstanceEditorObject
     }
 
     private void SetAudioProperties() {
-        List<SoundInstanceEditorAudioProperty> propertiesFromParameters = UpdateAudioPropertiesFromFMODParameters();
+        List<SoundInstanceEditorAudioProperty> propertiesFromParameters = RetrieveAudioPropertiesFromFMODParameters();
         // TODO: get properties from selections
         this.AudioProperties = propertiesFromParameters;
         this.AudioPropertyFoldouts = new bool[this.AudioProperties.Count];
@@ -154,7 +154,7 @@ public class SoundInstanceEditorObjectFmod : SoundInstanceEditorObject
         return eventAsset != null ? eventAsset.Path.Substring("event:/".Length) : "";
     }
 
-    private List<SoundInstanceEditorAudioProperty> UpdateAudioPropertiesFromFMODParameters() {
+    private List<SoundInstanceEditorAudioProperty> RetrieveAudioPropertiesFromFMODParameters() {
         // resets properties list
         List<SoundInstanceEditorAudioProperty> audioProperties = new List<SoundInstanceEditorAudioProperty>();
 

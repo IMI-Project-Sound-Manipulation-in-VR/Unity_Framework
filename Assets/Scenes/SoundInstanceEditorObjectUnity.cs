@@ -6,6 +6,7 @@ using UnityEngine;
 public class SoundInstanceEditorObjectUnity : SoundInstanceEditorObject
 {
     private AudioSource audioSource;
+    public AudioSource AudioSource { get { return audioSource; } set { audioSource = value; }}
     private AudioSource previousAudioSource;
     PropertyInfo[] reflectionAudioPropertyInfos;
     private SoundInstanceEditor editor;
@@ -20,7 +21,7 @@ public class SoundInstanceEditorObjectUnity : SoundInstanceEditorObject
         if(!audioSource.Equals(previousAudioSource)){
             previousAudioSource = audioSource;
             // TODO: name and shit
-
+            SetupAudioProperties();
         }
     }
 
@@ -62,8 +63,6 @@ public class SoundInstanceEditorObjectUnity : SoundInstanceEditorObject
     }
 
     // Public
-
-    // Private
     public void LoadReflectionScriptProperties()
     {   
         if(this.AudioProperties != null){
@@ -96,5 +95,21 @@ public class SoundInstanceEditorObjectUnity : SoundInstanceEditorObject
         // editorLevelProperty = scriptType != null ? scriptType.GetProperty("editorLevel", BindingFlags.Instance | BindingFlags.Public | BindingFlags.IgnoreCase) : null;
     }
 
+    // Private
+    private void SetupAudioProperties() {
+        List<SoundInstanceEditorAudioProperty> propertiesFromPreset = RetrieveAudioPropertiesFromPresets();
+        // TODO: get properties from selections
+        this.AudioProperties = propertiesFromPreset;
+        this.AudioPropertyFoldouts = new bool[this.AudioProperties.Count];
+    }
+
+    private List<SoundInstanceEditorAudioProperty> RetrieveAudioPropertiesFromPresets()
+    {
+        // create new audio properties list
+        List<SoundInstanceEditorAudioProperty> audioProperties = new List<SoundInstanceEditorAudioProperty>();
+        SoundInstanceEditorAudioProperty[] properties = this.propertyPresets[this.selectedPropertyPreset].propertiesArray;
+        audioProperties.AddRange(properties);
+        return audioProperties;
+    }
 
 }

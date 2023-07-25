@@ -12,6 +12,7 @@ public enum SoundInstanceEditorType
     Unity,
     Fmod
 }
+
 public class SoundInstanceEditor : MonoBehaviour
 {
     // Editor Type
@@ -20,6 +21,8 @@ public class SoundInstanceEditor : MonoBehaviour
     private SoundInstanceEditorObject soundInstanceEditorObject;
 
     // Unity
+    [SerializeField]
+    private AudioSource audioSourceReference;
 
     // FMOD
     [SerializeField]
@@ -83,6 +86,13 @@ public class SoundInstanceEditor : MonoBehaviour
                 SoundInstanceEditorObjectFmod fmodObject = (SoundInstanceEditorObjectFmod) soundInstanceEditorObject;
                 fmodObject.EventReference = fmodEventReference;
                 fmodObject.UpdateInstanceReference();
+            }
+            else if(editorType == SoundInstanceEditorType.Unity)
+            {
+                Debug.Log("bruh");
+                SoundInstanceEditorObjectUnity unityObject = (SoundInstanceEditorObjectUnity) soundInstanceEditorObject;
+                unityObject.AudioSource = audioSourceReference;
+                unityObject.UpdateInstanceReference();
             }
 
             GUILayout.BeginVertical(GUI.skin.window);
@@ -352,11 +362,13 @@ public class SoundInstanceEditor : MonoBehaviour
     {
         SoundInstanceEditor SoundInstanceEditor;
         private SerializedProperty eventReferenceProperty;
+        private SerializedProperty audioSourceProperty;
         
         private void OnEnable()
         {
             SoundInstanceEditor = (SoundInstanceEditor)target;
             eventReferenceProperty = serializedObject.FindProperty("fmodEventReference");
+            audioSourceProperty = serializedObject.FindProperty("audioSourceReference");
         }
 
         public override void OnInspectorGUI()
@@ -371,6 +383,10 @@ public class SoundInstanceEditor : MonoBehaviour
             if(SoundInstanceEditor.editorType == SoundInstanceEditorType.Fmod)
             { 
                 EditorGUILayout.PropertyField(eventReferenceProperty);
+            }
+            else if(SoundInstanceEditor.editorType == SoundInstanceEditorType.Fmod)
+            {
+                EditorGUILayout.PropertyField(audioSourceProperty);
             }
 
             SoundInstanceEditor.DrawInspectorGUI();
