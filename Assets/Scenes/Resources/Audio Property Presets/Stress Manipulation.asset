@@ -1,0 +1,68 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6d96f162c88fa764fb2bacf56183c5ed, type: 3}
+  m_Name: Stress Manipulation
+  m_EditorClassIdentifier: 
+  propertiesArray:
+  - propertyName: Volume
+    propertyEvaluationType: 0
+    propertyType: 2
+    curve:
+      serializedVersion: 2
+      m_Curve:
+      - serializedVersion: 3
+        time: 0
+        value: 0.25
+        inSlope: 0.09238566
+        outSlope: 0.09238566
+        tangentMode: 0
+        weightedMode: 0
+        inWeight: 0
+        outWeight: 0.4256372
+      - serializedVersion: 3
+        time: 0.15
+        value: 0.5
+        inSlope: 2.136836
+        outSlope: 2.136836
+        tangentMode: 0
+        weightedMode: 0
+        inWeight: 0.20437305
+        outWeight: 0.33333334
+      - serializedVersion: 3
+        time: 0.5
+        value: 0.75
+        inSlope: 0
+        outSlope: 0
+        tangentMode: 0
+        weightedMode: 0
+        inWeight: 0.33333334
+        outWeight: 0.2586546
+      - serializedVersion: 3
+        time: 1
+        value: 1
+        inSlope: 0
+        outSlope: 0
+        tangentMode: 0
+        weightedMode: 0
+        inWeight: 0.116307974
+        outWeight: 0.33333334
+      m_PreInfinity: 2
+      m_PostInfinity: 2
+      m_RotationOrder: 4
+    level: {x: 0, y: 1}
+    labels: []
+    inputValue: 0.883
+    outputValue: 0.9653395
+    minValue: 0.25
+    maxValue: 1
+    defaultMinValue: 0
+    defaultMaxValue: 1

@@ -60,6 +60,22 @@ public class SoundInstanceEditorAudioProperty
         defaultMinValue = reference.Min;
         defaultMaxValue = reference.Max;
     }
+
+    public void SetAudioPropertyFromPropertyTemplate(SoundInstanceEditorAudioPropertyTemplate template){
+
+        propertyName = template.propertyData.propertyName;
+        propertyEvaluationType = template.propertyData.propertyEvaluationType;
+        propertyType = template.propertyData.propertyType;
+        curve = template.propertyData.curve;
+        level = template.propertyData.level;
+        labels = template.propertyData.labels;
+        inputValue = template.propertyData.inputValue;
+        outputValue = template.propertyData.outputValue;
+        minValue = template.propertyData.minValue;
+        maxValue = template.propertyData.maxValue;
+        defaultMinValue = template.propertyData.defaultMinValue;
+        defaultMaxValue = template.propertyData.defaultMaxValue;
+    }
 }
 
 

@@ -10,7 +10,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: f2ca0038bab565a48b8fb6d88e406fa7, type: 3}
-  m_Name: Volume
+  m_Name: Volume FMOD
   m_EditorClassIdentifier: 
   propertyData:
     propertyName: Volume
@@ -18,14 +18,32 @@ MonoBehaviour:
     propertyType: 1
     curve:
       serializedVersion: 2
-      m_Curve: []
+      m_Curve:
+      - serializedVersion: 3
+        time: 0
+        value: 0
+        inSlope: 1
+        outSlope: 1
+        tangentMode: 34
+        weightedMode: 0
+        inWeight: 0
+        outWeight: 0
+      - serializedVersion: 3
+        time: 1
+        value: 1
+        inSlope: 1
+        outSlope: 1
+        tangentMode: 34
+        weightedMode: 0
+        inWeight: 0
+        outWeight: 0
       m_PreInfinity: 2
       m_PostInfinity: 2
       m_RotationOrder: 4
-    level: {x: 0, y: 0}
+    level: {x: 0, y: 1}
     labels: []
-    inputValue: 0
-    outputValue: 0
+    inputValue: 0.5
+    outputValue: 0.5
     minValue: 0
     maxValue: 1
     defaultMinValue: 0

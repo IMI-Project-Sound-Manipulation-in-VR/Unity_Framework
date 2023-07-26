@@ -1,72 +1,77 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using FMOD.Studio;
 using FMODUnity;
 using UnityEngine;
 
 public class SoundInstanceEditorObjectFmod : SoundInstanceEditorObject
 {
-    private EventReference eventReference;
-    public EventReference EventReference { get {return eventReference; } set { eventReference = value; } }
-    private EventReference previousEventReference;
-    public EventReference PreviousEventReference { get {return previousEventReference; } set { previousEventReference = value; } }
     private EventInstance eventInstance;
     private EditorEventRef eventAsset;
     private string playbackState;
-    private GameObject gameObject;
-    public SoundInstanceEditorObjectFmod(GameObject gameObject)
+    private SoundInstanceEditor editor;
+    public SoundInstanceEditorObjectFmod(SoundInstanceEditor editor)
     {
-        this.gameObject = gameObject;
+        this.editor = editor;
+        this.EditorType = SoundInstanceEditorType.Fmod;
+        
+        LoadPropertyPresets();
+        LoadPropertyTemplates();
+
+        SetupAudioReference();
     }
 
     // Overrides
-    public override void UpdateInstanceReference(){
-        // checks if event reference has changed
-        if(!eventReference.Equals(previousEventReference)){
-            // if so retrieve event information from fmod event reference
-            previousEventReference = eventReference;
-            RetrieveEventInformation();
+    public override void SetupAudioReference(){
+        SetEventInformationFromReference();
+        SetInstanceName();
+        SetAudioProperties();
+        SetAudioInstance();
+    }
 
-            SetInstanceName(RetrieveEventName());
-            SetAudioProperties();
-
-            SetupAudioInstance();
-        }
+    public override void SetAudioProperties() {
+        List<SoundInstanceEditorAudioProperty> propertiesFromParameters = RetrieveAudioPropertiesFromFMODParameters();
+        List<SoundInstanceEditorAudioProperty> propertiesFromTemplates = RetrieveAudioPropertiesFromTemplates();
+        // List<SoundInstanceEditorAudioProperty> propertiesFromPropertiesList = RetrieveAudioPropertiesFromPropertiesList();
+        // TODO: get properties from selections
+        this.AudioProperties = propertiesFromTemplates.Concat(propertiesFromParameters).ToList();
+        this.AudioPropertyFoldouts = new bool[this.AudioProperties.Count];
     }
 
     public override void AddNewAudioProperty()
     {
         base.AddNewAudioProperty();
-        // TODO:
 
+        SoundInstanceEditorAudioPropertyTemplate template = this.PropertyTemplates[this.selectedPropertyTemplateIndex];
+        SoundInstanceEditorAudioProperty newAudioProperty = new SoundInstanceEditorAudioProperty();
+        newAudioProperty.SetAudioPropertyFromPropertyTemplate(template);
+        this.AudioProperties.Add(newAudioProperty);
+
+        SetAudioProperties();
     }
 
-    public override void UpdatePropertyPresets()
+    public override void RemoveAudioProperty(int index)
     {
-        base.UpdatePropertyPresets();
+        base.RemoveAudioProperty(index);
+
+        this.AudioProperties.RemoveAt(index);
+
+        SetAudioProperties();
+    }
+
+    public override void LoadPropertyPresets()
+    {
+        base.LoadPropertyPresets();
 
         this.propertyPresets = Resources.LoadAll<SoundInstanceEditorAudioPropertyPreset>("Audio Property Presets");
     }
 
-    public override void UpdatePropertyTemplates()
+    public override void LoadPropertyTemplates()
     {
-        base.UpdatePropertyTemplates();
+        base.LoadPropertyTemplates();
 
-        // loads property templates, which are responsible for manipulating properties of a audio source object with additional options
-        // the templates setup default values, such as default input value, max and min values and a curve object.
         this.PropertyTemplates = Resources.LoadAll<SoundInstanceEditorAudioPropertyTemplate>("Audio Property Templates");
-
-
-        // loads property presets. presets are simply a handy collection of templates
-        // for example: a stress "preset" that includes two "templates" pitch and volume
-        // audioSourcePropertiesPresets = Resources.LoadAll<SoundInstanceEditorUnityPropertyPreset>("SoundInstanceEditorUnityParameterPresets");
-        
-        // // generate a string array, which includes the names of each template included in the preset
-        // // this is primarily used in the presets dropdown in the inspector, in which you can select different presets
-        // List<string> options = new List<string>();
-        // options.Add("No preset");
-        // options.AddRange(System.Array.ConvertAll(audioSourcePropertiesPresets, obj => obj.name));
-        // audioSourcePropertiesPresetsStrings = options.ToArray();
     }
 
     public override void SetAudioPropertyValue(SoundInstanceEditorAudioProperty property, int index, float value)
@@ -82,23 +87,41 @@ public class SoundInstanceEditorObjectFmod : SoundInstanceEditorObject
                 }
                 case SoundInstanceEditorAudioPropertyType.FmodAudioProperty:
                 {
-                    // TODO:
+                    switch (property.propertyName)
+                    {
+                        case "Volume" :
+                        {
+                            eventInstance.setVolume(property.outputValue);
+                            break;
+                        }
+                        case "Pitch" :
+                        {
+                            eventInstance.setPitch(property.outputValue);
+                            break;
+                        }
+                    }
+                    
                     break;
                 }
             }
         }
     }
 
-    public override void SetupAudioInstance()
+    public override void SetAudioInstance()
     {
+        if(this.eventInstance.isValid())
+        {
+            FMODSoundManager.instance.ReleaseEventInstance(this.eventInstance);
+        }
+
         // TODO: when event instance already exist, destroy it first
         // or else there will be multiple sounds playing
         if(FMODSoundManager.instance != null)
         {
-            eventInstance = FMODSoundManager.instance.CreateEventInstance(eventReference);
+            eventInstance = FMODSoundManager.instance.CreateEventInstance(editor.FmodEventReference);
             // RetrieveEventInstanceInformation();
             // sets 3d attributes of sound (needed for spatialize)
-            FMOD.ATTRIBUTES_3D attributes = RuntimeUtils.To3DAttributes(gameObject.transform);
+            FMOD.ATTRIBUTES_3D attributes = RuntimeUtils.To3DAttributes(editor.gameObject.transform);
             eventInstance.set3DAttributes(attributes);
         } 
         
@@ -112,6 +135,16 @@ public class SoundInstanceEditorObjectFmod : SoundInstanceEditorObject
             Play();
         }
         
+    }
+
+    public override void DisableAudioInstance()
+    {
+        base.DisableAudioInstance();
+
+        if(this.eventInstance.isValid())
+        {
+            FMODSoundManager.instance.ReleaseEventInstance(this.eventInstance);
+        }
     }
 
     // Public
@@ -132,26 +165,14 @@ public class SoundInstanceEditorObjectFmod : SoundInstanceEditorObject
         }
     }
 
-    private void RetrieveEventInformation()
+    private void SetEventInformationFromReference()
     {
-        eventAsset = EventManager.EventFromPath(eventReference.Path);
+        eventAsset = EventManager.EventFromPath(editor.FmodEventReference.Path);
     }
 
-    private void SetAudioProperties() {
-        List<SoundInstanceEditorAudioProperty> propertiesFromParameters = RetrieveAudioPropertiesFromFMODParameters();
-        // TODO: get properties from selections
-        this.AudioProperties = propertiesFromParameters;
-        this.AudioPropertyFoldouts = new bool[this.AudioProperties.Count];
-    }
-
-    private void SetInstanceName(string instanceName)
+    private void SetInstanceName()
     {
-        this.InstanceName = eventAsset.Path.Substring("event:/".Length);
-    }
-
-    private string RetrieveEventName()
-    {
-        return eventAsset != null ? eventAsset.Path.Substring("event:/".Length) : "";
+        this.InstanceName = eventAsset != null ? eventAsset.Path.Substring("event:/".Length) : "";
     }
 
     private List<SoundInstanceEditorAudioProperty> RetrieveAudioPropertiesFromFMODParameters() {
@@ -171,5 +192,18 @@ public class SoundInstanceEditorObjectFmod : SoundInstanceEditorObject
         }
         
         return audioProperties;
+    }
+
+    private List<SoundInstanceEditorAudioProperty> RetrieveAudioPropertiesFromTemplates()
+    {
+        SoundInstanceEditorAudioPropertyTemplate[] templates = this.PropertyTemplates;
+        return templates.Select(obj => obj.propertyData).Where(obj => obj.propertyType == SoundInstanceEditorAudioPropertyType.FmodAudioProperty).ToList();
+    }
+
+    private List<SoundInstanceEditorAudioProperty> RetrieveAudioPropertiesFromPropertiesList()
+    {
+        List<SoundInstanceEditorAudioProperty> currentAudioPropertiesList = this.AudioProperties;
+        if(currentAudioPropertiesList == null) { return new List<SoundInstanceEditorAudioProperty>(); }
+        return currentAudioPropertiesList.Where(obj => obj.propertyType == SoundInstanceEditorAudioPropertyType.FmodAudioProperty).ToList();   
     }
 }

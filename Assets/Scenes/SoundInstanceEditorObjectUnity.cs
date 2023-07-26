@@ -1,69 +1,141 @@
 using System.Collections;
+using System.Linq;
 using System.Collections.Generic;
 using System.Reflection;
 using UnityEngine;
 
 public class SoundInstanceEditorObjectUnity : SoundInstanceEditorObject
 {
-    private AudioSource audioSource;
-    public AudioSource AudioSource { get { return audioSource; } set { audioSource = value; }}
-    private AudioSource previousAudioSource;
     PropertyInfo[] reflectionAudioPropertyInfos;
     private SoundInstanceEditor editor;
 
-    public SoundInstanceEditorObjectUnity(SoundInstanceEditor gameObject)
+    public SoundInstanceEditorObjectUnity(SoundInstanceEditor editor)
     {
-        this.editor = gameObject;
-    }
+        this.editor = editor;
+        this.EditorType = SoundInstanceEditorType.Unity;
 
-    public override void UpdateInstanceReference()
-    {
-        if(!audioSource.Equals(previousAudioSource)){
-            previousAudioSource = audioSource;
-            // TODO: name and shit
-            SetupAudioProperties();
-        }
+        LoadPropertyPresets();
+        LoadPropertyTemplates();
+
+        SetupAudioReference();
     }
 
     // Overrides
-    public override void UpdatePropertyPresets()
+
+    public override void SetAudioPropertiesFromPreset()
     {
-        base.UpdatePropertyPresets();
+        SoundInstanceEditorAudioPropertyPreset propertyPreset = this.propertyPresets[this.selectedPropertyPresetIndex];
+        this.AudioProperties = propertyPreset.propertiesArray.ToList();
+        SetAudioProperties();
+    }
+
+    public override void SetupAudioReference()
+    {
+        SetAudioInstance();
+        SetInstanceName();
+        SetAudioPropertiesFromPreset();
+    }
+
+    public override void SetAudioProperties()
+    {
+        base.SetAudioProperties();
+
+        if(this.AudioProperties == null) { this.AudioProperties = new List<SoundInstanceEditorAudioProperty>(); }
+
+        this.AudioPropertyFoldouts = new bool[this.AudioProperties.Count];
+        FindCorrespondingAudioPropertyInfo();
+
+    }
+
+    public override void AddNewAudioProperty()
+    {
+        base.AddNewAudioProperty();
+
+        SoundInstanceEditorAudioPropertyTemplate template = this.PropertyTemplates[this.selectedPropertyTemplateIndex];
+        SoundInstanceEditorAudioProperty newAudioProperty = new SoundInstanceEditorAudioProperty();
+        newAudioProperty.SetAudioPropertyFromPropertyTemplate(template);
+        this.AudioProperties.Add(newAudioProperty);
+
+        SetAudioProperties();
+    }
+
+    public override void RemoveAudioProperty(int index)
+    {
+        base.RemoveAudioProperty(index);
+
+        this.AudioProperties.RemoveAt(index);
+
+        SetAudioProperties();
+    }
+    
+    public override void LoadPropertyPresets()
+    {
+        base.LoadPropertyPresets();
 
         this.propertyPresets = Resources.LoadAll<SoundInstanceEditorAudioPropertyPreset>("Audio Property Presets");
     }
 
-    public override void UpdatePropertyTemplates()
+    public override void LoadPropertyTemplates()
     {
-        base.UpdatePropertyTemplates();
+        base.LoadPropertyTemplates();
 
         // loads property templates, which are responsible for manipulating properties of a audio source object with additional options
         // the templates setup default values, such as default input value, max and min values and a curve object.
-        this.PropertyTemplates = Resources.LoadAll<SoundInstanceEditorAudioPropertyTemplate>("Audio Property Templates");
+        List<SoundInstanceEditorAudioPropertyTemplate> allTemplates = Resources.LoadAll<SoundInstanceEditorAudioPropertyTemplate>("Audio Property Templates").ToList();
+        this.PropertyTemplates = allTemplates.Where(obj => obj.propertyData.propertyType == SoundInstanceEditorAudioPropertyType.UnityAudioProperty).ToArray();
     }
 
     public override void SetAudioPropertyValue(SoundInstanceEditorAudioProperty property, int index, float value)
     {
         // if the audio source has such a field, update it with output value
         if(reflectionAudioPropertyInfos == null) { return; }
-        if(reflectionAudioPropertyInfos[index] != null && audioSource != null) {
+        if(reflectionAudioPropertyInfos[index] != null && editor.AudioSourceReference != null) {
             if(reflectionAudioPropertyInfos[index].PropertyType == typeof(bool))
             {
                 bool b = property.outputValue != 0.0f;
-                reflectionAudioPropertyInfos[index].SetValue(audioSource, b);
+                reflectionAudioPropertyInfos[index].SetValue(editor.AudioSourceReference, b);
             } else {
-                reflectionAudioPropertyInfos[index].SetValue(audioSource, value);
+                reflectionAudioPropertyInfos[index].SetValue(editor.AudioSourceReference, value);
             }
         }
     }
 
-    public override void SetupAudioInstance()
+    public override void SetAudioInstance()
     {
-        LoadReflectionScriptProperties();
+        DisableAudioInstance();
+
+        AudioSource newAudioSource = editor.gameObject.AddComponent<AudioSource>();
+        newAudioSource.enabled = true;
+        newAudioSource.clip = editor.AudioClipReference;
+        newAudioSource.loop = true;
+
+        editor.AudioSourceReference = newAudioSource;
+        if(Application.isPlaying)
+        {
+            editor.AudioSourceReference.Play();
+        }
+    }
+
+    public override void DisableAudioInstance()
+    {
+        base.DisableAudioInstance();
+
+        foreach(AudioSource audioSource in editor.gameObject.GetComponents<AudioSource>())
+        {
+            GameObject.DestroyImmediate(audioSource);
+        }
     }
 
     // Public
-    public void LoadReflectionScriptProperties()
+
+    // Private
+
+    private void SetInstanceName()
+    {
+        this.InstanceName = editor.AudioSourceReference.clip.name;
+    }
+
+    private void FindCorrespondingAudioPropertyInfo()
     {   
         if(this.AudioProperties != null){
             // generates a array of property infos for...
@@ -79,7 +151,7 @@ public class SoundInstanceEditorObjectUnity : SoundInstanceEditorObject
                 SoundInstanceEditorAudioProperty property = this.AudioProperties[i];
 
                 // check if the audio source has a properties with the same name (ideally it should always yield the correct result. if not, maybe the name is wrong)
-                PropertyInfo f = audioSource != null ? audioSource.GetType().GetProperty(property.propertyName, BindingFlags.Instance | BindingFlags.Public | BindingFlags.IgnoreCase) : null;
+                PropertyInfo f = editor.AudioSourceReference != null ? editor.AudioSourceReference.GetType().GetProperty(property.propertyName, BindingFlags.Instance | BindingFlags.Public | BindingFlags.IgnoreCase) : null;
                 
                 // check if the script has a field with the same property name
                 // this is optional. if the property doesnt exists, the external script will not controll the property
@@ -93,23 +165,6 @@ public class SoundInstanceEditorObjectUnity : SoundInstanceEditorObject
         }
 
         // editorLevelProperty = scriptType != null ? scriptType.GetProperty("editorLevel", BindingFlags.Instance | BindingFlags.Public | BindingFlags.IgnoreCase) : null;
-    }
-
-    // Private
-    private void SetupAudioProperties() {
-        List<SoundInstanceEditorAudioProperty> propertiesFromPreset = RetrieveAudioPropertiesFromPresets();
-        // TODO: get properties from selections
-        this.AudioProperties = propertiesFromPreset;
-        this.AudioPropertyFoldouts = new bool[this.AudioProperties.Count];
-    }
-
-    private List<SoundInstanceEditorAudioProperty> RetrieveAudioPropertiesFromPresets()
-    {
-        // create new audio properties list
-        List<SoundInstanceEditorAudioProperty> audioProperties = new List<SoundInstanceEditorAudioProperty>();
-        SoundInstanceEditorAudioProperty[] properties = this.propertyPresets[this.selectedPropertyPreset].propertiesArray;
-        audioProperties.AddRange(properties);
-        return audioProperties;
     }
 
 }

@@ -23,8 +23,8 @@ public class SoundInstanceEditorObject
     // Presets
     // TODO: convert to properties
     public SoundInstanceEditorAudioPropertyPreset[] propertyPresets;
-    public int previousPropertyPreset;
-    public int selectedPropertyPreset;
+    public int previousPropertyPresetIndex;
+    public int selectedPropertyPresetIndex;
 
     // Properties
     private List<SoundInstanceEditorAudioProperty> audioProperties;
@@ -34,11 +34,27 @@ public class SoundInstanceEditorObject
 
     // Public
 
+    public bool ComparePresetWithAudioProperties()
+    {
+        SoundInstanceEditorAudioProperty[] presetArray = propertyPresets[selectedPropertyPresetIndex].propertiesArray;
+        if(presetArray.Length != audioProperties.Count) { return false; }
+        for(int i = 0; i < presetArray.Length; i++)
+        {
+            if(presetArray[i].propertyName != audioProperties[i].propertyName) { return false; }
+        }
+        
+        return true;
+    }
+
     // Public Virtual
     public virtual void SetAudioPropertyValue(SoundInstanceEditorAudioProperty property, int index, float value){}
-    public virtual void UpdateInstanceReference() { }
-    public virtual void SetupAudioInstance() { }
-    public virtual void UpdatePropertyTemplates() { }
-    public virtual void UpdatePropertyPresets() { }
+    public virtual void SetupAudioReference() { }
+    public virtual void SetAudioInstance() { }
+    public virtual void DisableAudioInstance() { }
+    public virtual void LoadPropertyTemplates() { }
+    public virtual void LoadPropertyPresets() { }
     public virtual void AddNewAudioProperty() { }
+    public virtual void RemoveAudioProperty(int index) { }
+    public virtual void SetAudioProperties() { }
+    public virtual void SetAudioPropertiesFromPreset() { }
 }
