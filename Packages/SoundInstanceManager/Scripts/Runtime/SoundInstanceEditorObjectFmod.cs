@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using FMOD.Studio;
 using FMODUnity;
 using UnityEngine;
@@ -37,6 +38,8 @@ public class SoundInstanceEditorObjectFmod : SoundInstanceEditorObject
         // TODO: get properties from selections
         this.AudioProperties = propertiesFromTemplates.Concat(propertiesFromParameters).ToList();
         this.AudioPropertyFoldouts = new bool[this.AudioProperties.Count];
+
+        SetupScriptReflectionInfosFromAudioProperties();
     }
 
     public override void AddNewAudioProperty()
@@ -205,5 +208,19 @@ public class SoundInstanceEditorObjectFmod : SoundInstanceEditorObject
         List<SoundInstanceEditorAudioProperty> currentAudioPropertiesList = this.AudioProperties;
         if(currentAudioPropertiesList == null) { return new List<SoundInstanceEditorAudioProperty>(); }
         return currentAudioPropertiesList.Where(obj => obj.propertyType == SoundInstanceEditorAudioPropertyType.FmodAudioProperty).ToList();   
+    }
+
+    private void SetupScriptReflectionInfosFromAudioProperties()
+    {
+        editor.reflectionScriptProperties = new PropertyInfo[this.AudioProperties.Count];
+        for (int i = 0; i < this.AudioProperties.Count; i++) {
+            SoundInstanceEditorAudioProperty property = this.AudioProperties[i];
+
+            // check if the script has a field with the same property name
+            // this is optional. if the property doesnt exists, the external script will not controll the property
+            // and so only manual mainpulation through the inspector will work
+            PropertyInfo p = editor.reflectionScriptType != null ? editor.reflectionScriptType.GetProperty(property.propertyName, BindingFlags.Instance | BindingFlags.Public | BindingFlags.IgnoreCase) : null;
+            if(p != null) editor.reflectionScriptProperties[i] = p;
+        }
     }
 }

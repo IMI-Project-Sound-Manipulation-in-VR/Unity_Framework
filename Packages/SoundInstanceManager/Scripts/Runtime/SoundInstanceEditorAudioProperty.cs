@@ -12,6 +12,14 @@ public enum SoundInstanceEditorAudioPropertyEvaluationType
     Labeled
 }
 
+public enum SoundInstanceEditorAudioPropertyControlType
+{
+    None,
+    Editor,
+    Manager,
+    Script
+}
+
 public enum SoundInstanceEditorAudioPropertyType
 {
     FmodParameter,
@@ -24,6 +32,7 @@ public class SoundInstanceEditorAudioProperty
 {
     public string propertyName;
     public SoundInstanceEditorAudioPropertyEvaluationType propertyEvaluationType;
+    public SoundInstanceEditorAudioPropertyControlType propertyControlType;
     public SoundInstanceEditorAudioPropertyType propertyType;
     public AnimationCurve curve;
     public Vector2 level;

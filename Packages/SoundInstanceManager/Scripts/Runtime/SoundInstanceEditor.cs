@@ -47,7 +47,8 @@ public class SoundInstanceEditor : MonoBehaviour
     // Reflection external script
     [SerializeField] private MonoBehaviour reflectionScript;
     public Type reflectionScriptType;
-    private PropertyInfo[] reflectionScriptProperties;
+    // TODO
+    public PropertyInfo[] reflectionScriptProperties;
 
     // Properties
     private bool addProperty;
@@ -143,14 +144,7 @@ public class SoundInstanceEditor : MonoBehaviour
 
                     // get the name of the property
                     string foldoutName =  char.ToUpper(property.propertyName[0]) + property.propertyName.Substring(1);
-                    if (editorLevelActive && !managerLevelActive)
-                    {
-                        foldoutName += " (controlled by script)";
-                    }
-                    else if (managerLevelActive)
-                    {
-                        foldoutName += " (controlled by manager level)";
-                    }
+                    if(property.propertyControlType != SoundInstanceEditorAudioPropertyControlType.None) { foldoutName += "(" + property.propertyControlType.ToString() + ")"; }
 
                     // display a foldout for current property
                     GUILayout.BeginVertical(GUI.skin.box);
@@ -165,7 +159,7 @@ public class SoundInstanceEditor : MonoBehaviour
                                 Rect curveRect = EditorGUILayout.GetControlRect();
                                 property.curve = EditorGUI.CurveField(curveRect, "Curve", property.curve);
 
-                                EditorGUI.BeginDisabledGroup(editorLevelActive || managerLevelActive);
+                                EditorGUI.BeginDisabledGroup(property.propertyControlType != SoundInstanceEditorAudioPropertyControlType.None);
                                 property.inputValue = EditorGUILayout.Slider("Input Value", property.inputValue, 0, 1);
                                 EditorGUI.EndDisabledGroup();
 
@@ -176,7 +170,7 @@ public class SoundInstanceEditor : MonoBehaviour
                                 break;
                             case SoundInstanceEditorAudioPropertyEvaluationType.Labeled:
 
-                                EditorGUI.BeginDisabledGroup(editorLevelActive || managerLevelActive);
+                                EditorGUI.BeginDisabledGroup(property.propertyControlType != SoundInstanceEditorAudioPropertyControlType.None);
                                 property.inputValue = EditorGUILayout.Slider("Input Value", property.inputValue, 0, 1);
                                 EditorGUI.EndDisabledGroup();
 
@@ -201,7 +195,7 @@ public class SoundInstanceEditor : MonoBehaviour
                                 GUILayout.EndHorizontal();
                                 EditorGUILayout.Space();
 
-                                EditorGUI.BeginDisabledGroup(editorLevelActive || managerLevelActive);
+                                EditorGUI.BeginDisabledGroup(property.propertyControlType != SoundInstanceEditorAudioPropertyControlType.None);
                                 property.inputValue = EditorGUILayout.Slider("Input Value", property.inputValue, 0, 1);
                                 EditorGUI.EndDisabledGroup();
 
@@ -215,7 +209,7 @@ public class SoundInstanceEditor : MonoBehaviour
                                 property.minValue = EditorGUILayout.FloatField("Min Value", property.minValue);
                                 property.maxValue = EditorGUILayout.FloatField("Max Value", property.maxValue);
 
-                                EditorGUI.BeginDisabledGroup(editorLevelActive || managerLevelActive);
+                                EditorGUI.BeginDisabledGroup(property.propertyControlType != SoundInstanceEditorAudioPropertyControlType.None);
                                 property.inputValue = EditorGUILayout.Slider("Input Value", property.inputValue, 0, 1);
                                 EditorGUI.EndDisabledGroup();
 
@@ -422,16 +416,26 @@ public class SoundInstanceEditor : MonoBehaviour
         for (int index = 0; index < soundInstanceEditorObject.AudioProperties.Count; index++)
         {
             SoundInstanceEditorAudioProperty property = soundInstanceEditorObject.AudioProperties[index];
-            // PropertyInfo reflectionAudioProperty = reflectionScriptProperties[i];
+            PropertyInfo reflectionAudioProperty = reflectionScriptProperties[index];
             // TODO: catch if property doesnt have matching audio property
 
             PropertyInfo reflectionScriptProperty = reflectionScriptProperties != null ? reflectionScriptProperties[index] : null;
             
             float inputValue = 0;
 
-            inputValue = reflectionScriptProperty != null ? Convert.ToSingle(reflectionScriptProperty.GetValue(reflectionScript)) : property.inputValue;
-            if(editorLevelActive) { inputValue = editorLevel;}
-            if(managerLevelActive) { inputValue = managerLevel;}
+            inputValue = property.inputValue;
+            property.propertyControlType = SoundInstanceEditorAudioPropertyControlType.None;
+
+            if(editorLevelActive) {
+                inputValue = editorLevel; property.propertyControlType = SoundInstanceEditorAudioPropertyControlType.Editor;
+            }
+            if(managerLevelActive) { 
+                inputValue = managerLevel; property.propertyControlType = SoundInstanceEditorAudioPropertyControlType.Manager; 
+            }
+            if(reflectionScriptProperty != null) { 
+                inputValue = Convert.ToSingle(reflectionScriptProperty.GetValue(reflectionScript));
+                property.propertyControlType = SoundInstanceEditorAudioPropertyControlType.Script;
+            }
 
             switch (property.propertyEvaluationType)
             {
@@ -498,12 +502,14 @@ public class SoundInstanceEditor : MonoBehaviour
         SoundInstanceEditor SoundInstanceEditor;
         private SerializedProperty eventReferenceProperty;
         private SerializedProperty audioClipProperty;
+        private SerializedProperty reflectionScriptProperty;
         
         private void OnEnable()
         {
             SoundInstanceEditor = (SoundInstanceEditor)target;
             eventReferenceProperty = serializedObject.FindProperty("fmodEventReference");
             audioClipProperty = serializedObject.FindProperty("audioClipReference");
+            reflectionScriptProperty = serializedObject.FindProperty("reflectionScript");
 
             // SoundInstanceEditor.SetupEditorObject();
         }
@@ -512,6 +518,8 @@ public class SoundInstanceEditor : MonoBehaviour
         {
             serializedObject.Update();
 
+            // TODO: dont update method in "Update" and on inspector gui, else it will update twice per step
+            // see manager script
             SoundInstanceEditor.UpdateMethods();
 
             SoundInstanceEditor.DrawInspectorGUIDefaultInfo();
@@ -524,6 +532,11 @@ public class SoundInstanceEditor : MonoBehaviour
             else if(SoundInstanceEditor.editorType == SoundInstanceEditorType.Unity)
             {
                 EditorGUILayout.PropertyField(audioClipProperty);
+            }
+
+            if(!Application.isPlaying)
+            {
+                EditorGUILayout.PropertyField(reflectionScriptProperty);
             }
 
             SoundInstanceEditor.DrawInspectorGUI();

@@ -15,6 +15,7 @@ MonoBehaviour:
   propertiesArray:
   - propertyName: Volume
     propertyEvaluationType: 0
+    propertyControlType: 0
     propertyType: 2
     curve:
       serializedVersion: 2
@@ -60,9 +61,117 @@ MonoBehaviour:
       m_RotationOrder: 4
     level: {x: 0, y: 1}
     labels: []
-    inputValue: 0.883
-    outputValue: 0.9653395
+    inputValue: 0.72019494
+    outputValue: 0.8527521
     minValue: 0.25
+    maxValue: 1
+    defaultMinValue: 0
+    defaultMaxValue: 1
+  - propertyName: Pitch
+    propertyEvaluationType: 0
+    propertyControlType: 0
+    propertyType: 2
+    curve:
+      serializedVersion: 2
+      m_Curve:
+      - serializedVersion: 3
+        time: 0
+        value: 0.7357483
+        inSlope: 1.761678
+        outSlope: 1.761678
+        tangentMode: 34
+        weightedMode: 0
+        inWeight: 0
+        outWeight: 0.33333334
+      - serializedVersion: 3
+        time: 0.15
+        value: 1
+        inSlope: 0.021366928
+        outSlope: 0.021366928
+        tangentMode: 0
+        weightedMode: 0
+        inWeight: 0.08643371
+        outWeight: 0.2188157
+      - serializedVersion: 3
+        time: 0.5
+        value: 1
+        inSlope: 0
+        outSlope: 0
+        tangentMode: 0
+        weightedMode: 0
+        inWeight: 0.33333334
+        outWeight: 0.33333334
+      - serializedVersion: 3
+        time: 0.8
+        value: 1
+        inSlope: 0
+        outSlope: 0
+        tangentMode: 136
+        weightedMode: 0
+        inWeight: 0.33333334
+        outWeight: 0.33333334
+      - serializedVersion: 3
+        time: 1
+        value: 1.2
+        inSlope: 1.0000004
+        outSlope: 1.0000004
+        tangentMode: 34
+        weightedMode: 0
+        inWeight: 0.33333334
+        outWeight: 0
+      m_PreInfinity: 2
+      m_PostInfinity: 2
+      m_RotationOrder: 4
+    level: {x: 0, y: 1}
+    labels: []
+    inputValue: 1
+    outputValue: 1.2
+    minValue: 0.7357483
+    maxValue: 1.2
+    defaultMinValue: -3
+    defaultMaxValue: 3
+  - propertyName: SpatialBlend
+    propertyEvaluationType: 0
+    propertyControlType: 0
+    propertyType: 2
+    curve:
+      serializedVersion: 2
+      m_Curve:
+      - serializedVersion: 3
+        time: 0
+        value: 1
+        inSlope: 0
+        outSlope: 0
+        tangentMode: 34
+        weightedMode: 0
+        inWeight: 0
+        outWeight: 0.33333334
+      - serializedVersion: 3
+        time: 0.85
+        value: 1
+        inSlope: 0
+        outSlope: 0
+        tangentMode: 0
+        weightedMode: 0
+        inWeight: 0.33333334
+        outWeight: 0.33333334
+      - serializedVersion: 3
+        time: 1
+        value: 0
+        inSlope: -6.666668
+        outSlope: -6.666668
+        tangentMode: 34
+        weightedMode: 0
+        inWeight: 0.33333334
+        outWeight: 0
+      m_PreInfinity: 2
+      m_PostInfinity: 2
+      m_RotationOrder: 4
+    level: {x: 0, y: 1}
+    labels: []
+    inputValue: 0.5
+    outputValue: 0.5
+    minValue: 0
     maxValue: 1
     defaultMinValue: 0
     defaultMaxValue: 1

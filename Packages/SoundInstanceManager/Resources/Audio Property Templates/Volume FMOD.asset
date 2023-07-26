@@ -14,36 +14,55 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   propertyData:
     propertyName: Volume
-    propertyEvaluationType: 1
+    propertyEvaluationType: 0
+    propertyControlType: 0
     propertyType: 1
     curve:
       serializedVersion: 2
       m_Curve:
       - serializedVersion: 3
         time: 0
-        value: 0
-        inSlope: 1
-        outSlope: 1
-        tangentMode: 34
+        value: 0.25
+        inSlope: 0.09238566
+        outSlope: 0.09238566
+        tangentMode: 0
         weightedMode: 0
         inWeight: 0
-        outWeight: 0
+        outWeight: 0.4256372
+      - serializedVersion: 3
+        time: 0.15
+        value: 0.5
+        inSlope: 2.136836
+        outSlope: 2.136836
+        tangentMode: 0
+        weightedMode: 0
+        inWeight: 0.20437305
+        outWeight: 0.33333334
+      - serializedVersion: 3
+        time: 0.5
+        value: 0.75
+        inSlope: 0
+        outSlope: 0
+        tangentMode: 0
+        weightedMode: 0
+        inWeight: 0.33333334
+        outWeight: 0.2586546
       - serializedVersion: 3
         time: 1
         value: 1
-        inSlope: 1
-        outSlope: 1
-        tangentMode: 34
+        inSlope: 0
+        outSlope: 0
+        tangentMode: 0
         weightedMode: 0
-        inWeight: 0
-        outWeight: 0
+        inWeight: 0.116307974
+        outWeight: 0.33333334
       m_PreInfinity: 2
       m_PostInfinity: 2
       m_RotationOrder: 4
     level: {x: 0, y: 1}
     labels: []
-    inputValue: 0.5
-    outputValue: 0.5
+    inputValue: 0.8709612
+    outputValue: 0.8709612
     minValue: 0
     maxValue: 1
     defaultMinValue: 0

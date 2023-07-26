@@ -149,7 +149,7 @@ public class SoundInstanceEditorObjectUnity : SoundInstanceEditorObject
             reflectionAudioPropertyInfos = new PropertyInfo[this.AudioProperties.Count];
 
             // the properties of the script. these will hold the properties, from which this script can retrieves values automatically
-            // reflectionScriptProperties = new PropertyInfo[this.AudioProperties.Count];
+            editor.reflectionScriptProperties = new PropertyInfo[this.AudioProperties.Count];
 
             // for each property available in the preset
             for (int i = 0; i < this.AudioProperties.Count; i++) {
@@ -161,11 +161,11 @@ public class SoundInstanceEditorObjectUnity : SoundInstanceEditorObject
                 // check if the script has a field with the same property name
                 // this is optional. if the property doesnt exists, the external script will not controll the property
                 // and so only manual mainpulation through the inspector will work
-                // PropertyInfo p = editor.reflectionScriptType != null ? editor.reflectionScriptType.GetProperty(property.propertyName, BindingFlags.Instance | BindingFlags.Public | BindingFlags.IgnoreCase) : null;
+                PropertyInfo p = editor.reflectionScriptType != null ? editor.reflectionScriptType.GetProperty(property.propertyName, BindingFlags.Instance | BindingFlags.Public | BindingFlags.IgnoreCase) : null;
 
                 // assign the property infos if they exist
                 if(f != null) reflectionAudioPropertyInfos[i] = f;
-                // if(p != null) reflectionScriptProperties[i] = p;
+                if(p != null) editor.reflectionScriptProperties[i] = p;
             }
         }
 

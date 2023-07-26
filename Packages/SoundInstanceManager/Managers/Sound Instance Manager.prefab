@@ -1,6 +1,6 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
---- !u!1 &437139060508446286
+--- !u!1 &92552270374612436
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -8,9 +8,9 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 437139060508446285}
-  - component: {fileID: 437139060508446284}
-  - component: {fileID: 437139060508446287}
+  - component: {fileID: 92552270374612438}
+  - component: {fileID: 92552270374612439}
+  - component: {fileID: 92552270374612437}
   m_Layer: 0
   m_Name: Sound Instance Manager
   m_TagString: Untagged
@@ -18,13 +18,13 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!4 &437139060508446285
+--- !u!4 &92552270374612438
 Transform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 437139060508446286}
+  m_GameObject: {fileID: 92552270374612436}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
@@ -33,31 +33,32 @@ Transform:
   m_Father: {fileID: 0}
   m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &437139060508446284
+--- !u!114 &92552270374612439
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 437139060508446286}
+  m_GameObject: {fileID: 92552270374612436}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 14a96f58bd2ceef4390c10be736be5dc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  soundInstanceManager: {fileID: 437139060508446287}
---- !u!114 &437139060508446287
+  soundInstanceManager: {fileID: 92552270374612437}
+--- !u!114 &92552270374612437
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 437139060508446286}
+  m_GameObject: {fileID: 92552270374612436}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 4eb37d373a9ad5f469b2a4c91af958f0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  soundInstancesUnity: []
+  soundInstancesUnity:
+  - {fileID: 0}
   soundInstancesFmod: []
   script: {fileID: 0}

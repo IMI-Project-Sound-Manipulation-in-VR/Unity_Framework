@@ -1,6 +1,6 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
---- !u!1 &3017157616549683390
+--- !u!1 &165152596916689016
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -8,8 +8,9 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 5365351347581246992}
-  - component: {fileID: 9112649888056178346}
+  - component: {fileID: 165152596916689021}
+  - component: {fileID: 165152596916689022}
+  - component: {fileID: 165152596916689023}
   m_Layer: 0
   m_Name: Sound Instance Editor
   m_TagString: Untagged
@@ -17,13 +18,13 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!4 &5365351347581246992
+--- !u!4 &165152596916689021
 Transform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3017157616549683390}
+  m_GameObject: {fileID: 165152596916689016}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
@@ -32,13 +33,28 @@ Transform:
   m_Father: {fileID: 0}
   m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &9112649888056178346
+--- !u!114 &165152596916689022
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3017157616549683390}
+  m_GameObject: {fileID: 165152596916689016}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 29ed7d858bcf3cf468e4f5200683a0fa, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  traffic: 0
+  walla: 0
+  volume: 0
+--- !u!114 &165152596916689023
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 165152596916689016}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 554a76e9296a58a4a9d56364c6759c94, type: 3}
@@ -53,4 +69,4 @@ MonoBehaviour:
       Data3: 0
       Data4: 0
     Path: 
-  reflectionScript: {fileID: 0}
+  reflectionScript: {fileID: 165152596916689022}
