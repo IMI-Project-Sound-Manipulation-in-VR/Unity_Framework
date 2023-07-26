@@ -9,11 +9,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: a7165d4336ea46b41af51134bbb47eaa, type: 3}
-  m_Name: Default
+  m_Script: {fileID: 11500000, guid: 6d96f162c88fa764fb2bacf56183c5ed, type: 3}
+  m_Name: Empty
   m_EditorClassIdentifier: 
-  presetName: Default
-  tempo: 1
-  pitch: 1
-  volume: 1
-  level: {x: 0, y: 1}
+  propertiesArray: []

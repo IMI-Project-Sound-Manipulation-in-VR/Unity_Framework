@@ -28,7 +28,6 @@ public class SoundInstanceEditor : MonoBehaviour
     private AudioClip previousAudioClipReference;
     private AudioSource audioSourceReference;
     public AudioSource AudioSourceReference { get { return audioSourceReference; } set { audioSourceReference = value; }}
-    
 
     // FMOD
     [SerializeField]
@@ -126,6 +125,11 @@ public class SoundInstanceEditor : MonoBehaviour
                 // popup or dropdown list for selecting presets
                 string[] audioSourcePropertiesPresetsStrings = System.Array.ConvertAll(soundInstanceEditorObject.propertyPresets, obj => obj.name);
                 soundInstanceEditorObject.selectedPropertyPresetIndex = EditorGUILayout.Popup("Presets", soundInstanceEditorObject.selectedPropertyPresetIndex, audioSourcePropertiesPresetsStrings);
+                if(soundInstanceEditorObject.selectedPropertyPresetIndex != soundInstanceEditorObject.previousPropertyPresetIndex)
+                {
+                    soundInstanceEditorObject.previousPropertyPresetIndex = soundInstanceEditorObject.selectedPropertyPresetIndex;
+                    soundInstanceEditorObject.SetAudioPropertiesFromPreset();
+                }
             }
             
 
@@ -297,7 +301,8 @@ public class SoundInstanceEditor : MonoBehaviour
 
                     if (GUILayout.Button("Add new preset", GUILayout.Width(100)))
                     {
-                        string assetPath = "Assets" + "/" + "Scenes" + "/" + "Resources" + "/" + "Audio Property Presets" + "/" + presetName + ".asset";
+                        // TODO: doesnt seem to work, when its a package
+                        string assetPath = "Packages" + "/" + "Sound Instance Manager" + "/" + "Resources" + "/" + "Audio Property Presets" + "/" + presetName + ".asset";
                         SoundInstanceEditorAudioPropertyPreset newPreset = ScriptableObject.CreateInstance<SoundInstanceEditorAudioPropertyPreset>();
                         newPreset.propertiesArray = soundInstanceEditorObject.AudioProperties.ToArray();
 

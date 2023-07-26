@@ -25,7 +25,11 @@ public class SoundInstanceEditorObjectUnity : SoundInstanceEditorObject
     public override void SetAudioPropertiesFromPreset()
     {
         SoundInstanceEditorAudioPropertyPreset propertyPreset = this.propertyPresets[this.selectedPropertyPresetIndex];
-        this.AudioProperties = propertyPreset.propertiesArray.ToList();
+        if(propertyPreset.propertiesArray.Length == 0) {
+            this.AudioProperties = new List<SoundInstanceEditorAudioProperty>();
+        } else {
+            this.AudioProperties = propertyPreset.propertiesArray.ToList();
+        }
         SetAudioProperties();
     }
 
@@ -108,6 +112,7 @@ public class SoundInstanceEditorObjectUnity : SoundInstanceEditorObject
         newAudioSource.enabled = true;
         newAudioSource.clip = editor.AudioClipReference;
         newAudioSource.loop = true;
+        newAudioSource.hideFlags = HideFlags.HideInInspector;
 
         editor.AudioSourceReference = newAudioSource;
         if(Application.isPlaying)
