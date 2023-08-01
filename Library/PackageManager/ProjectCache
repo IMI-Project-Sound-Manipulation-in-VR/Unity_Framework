@@ -23,8 +23,8 @@ m_EmbeddedPackageManifests:
       m_ContentTrackingEnabled: 1
       m_ModificationDate:
         serializedVersion: 2
-        ticks: 638259952628189148
-      m_Hash: 3867619422
+        ticks: 638264876314519997
+      m_Hash: 477330319
 m_LocalPackages:
   m_LocalFileStatus: []
 m_ProjectPath: C:/Users/Russell/SoundManipulation/Packages
@@ -116,6 +116,7 @@ m_ResolvedPackages:
     - 2.0.3
     - 2.0.4
     - 2.0.5
+    - 2.0.7
     - 2.1.0-preview.3
     - 2.1.0-preview.5
     - 2.1.0-preview.6
@@ -123,10 +124,11 @@ m_ResolvedPackages:
     - 2.0.3
     - 2.0.4
     - 2.0.5
+    - 2.0.7
     - 2.1.0-preview.3
     - 2.1.0-preview.5
     - 2.1.0-preview.6
-    verified: 2.0.5
+    verified: 2.0.7
   dependencies: []
   resolvedDependencies: []
   keywords:
@@ -2759,7 +2761,7 @@ m_ResolvedPackages:
 - packageId: com.htw.soundinstancemanager@file:C:\Users\Russell\SoundManipulation\Packages\SoundInstanceManager
   testable: 1
   isDirectDependency: 1
-  version: 1.4.6
+  version: 1.4.7
   source: 3
   resolvedPath: C:\Users\Russell\SoundManipulation\Packages\SoundInstanceManager
   assetPath: Packages/com.htw.soundinstancemanager

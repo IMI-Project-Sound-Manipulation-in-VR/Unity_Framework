@@ -160,22 +160,28 @@ public class SoundInstanceManager : MonoBehaviour
 
     public void InitializeEditorObjects()
     {
-        for(int i = 0; i < soundInstancesUnity.Length; i++)
+        if(soundInstancesUnity != null)
         {
-            SoundInstanceEditor soundInstance = soundInstancesUnity[i];
-            if(soundInstance.SoundInstanceEditorObject == null)
+            for(int i = 0; i < soundInstancesUnity.Length; i++)
             {
-                soundInstance.InitializeEditorObject();
+                SoundInstanceEditor soundInstance = soundInstancesUnity[i];
+                if(soundInstance.SoundInstanceEditorObject == null)
+                {
+                    soundInstance.InitializeEditorObject();
+                }
+                
             }
-            
         }
-
-        for(int i = 0; i < soundInstancesFmod.Length; i++)
+        
+        if(soundInstancesFmod != null)
         {
-            SoundInstanceEditor soundInstance = soundInstancesFmod[i];
-            if(soundInstance.SoundInstanceEditorObject == null)
+            for(int i = 0; i < soundInstancesFmod.Length; i++)
             {
-                soundInstance.InitializeEditorObject();
+                SoundInstanceEditor soundInstance = soundInstancesFmod[i];
+                if(soundInstance.SoundInstanceEditorObject == null)
+                {
+                    soundInstance.InitializeEditorObject();
+                }
             }
         }
     }

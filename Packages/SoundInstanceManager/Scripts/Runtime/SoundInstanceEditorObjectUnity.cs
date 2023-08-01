@@ -130,7 +130,7 @@ public class SoundInstanceEditorObjectUnity : SoundInstanceEditorObject
         newAudioSource.enabled = true;
         newAudioSource.clip = editor.AudioClipReference;
         newAudioSource.loop = true;
-        newAudioSource.hideFlags = HideFlags.HideInInspector;
+        // newAudioSource.hideFlags = HideFlags.HideInInspector;
 
         editor.AudioSourceReference = newAudioSource;
         if(Application.isPlaying)
