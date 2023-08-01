@@ -15,7 +15,9 @@ MonoBehaviour:
   propertyData:
     propertyName: Pitch
     propertyEvaluationType: 0
-    propertyType: 1
+    propertyControlType: 0
+    propertyType: 2
+    showProperty: 0
     curve:
       serializedVersion: 2
       m_Curve:
@@ -70,8 +72,8 @@ MonoBehaviour:
     level: {x: 0, y: 1}
     labels: []
     inputValue: 1
-    outputValue: 1
-    minValue: -3
-    maxValue: 3
+    outputValue: 1.2
+    minValue: 0.75
+    maxValue: 1.2
     defaultMinValue: -3
     defaultMaxValue: 3

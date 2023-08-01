@@ -17,6 +17,7 @@ MonoBehaviour:
     propertyEvaluationType: 0
     propertyControlType: 0
     propertyType: 2
+    showProperty: 0
     curve:
       serializedVersion: 2
       m_Curve:
@@ -61,8 +62,8 @@ MonoBehaviour:
       m_RotationOrder: 4
     level: {x: 0, y: 1}
     labels: []
-    inputValue: 0.72019494
-    outputValue: 0.8527521
+    inputValue: 0.5
+    outputValue: 0
     minValue: 0.25
     maxValue: 1
     defaultMinValue: 0
@@ -71,14 +72,15 @@ MonoBehaviour:
     propertyEvaluationType: 0
     propertyControlType: 0
     propertyType: 2
+    showProperty: 0
     curve:
       serializedVersion: 2
       m_Curve:
       - serializedVersion: 3
         time: 0
-        value: 0.7357483
-        inSlope: 1.761678
-        outSlope: 1.761678
+        value: 0.75
+        inSlope: 1.6666666
+        outSlope: 1.6666666
         tangentMode: 34
         weightedMode: 0
         inWeight: 0
@@ -124,9 +126,9 @@ MonoBehaviour:
       m_RotationOrder: 4
     level: {x: 0, y: 1}
     labels: []
-    inputValue: 1
-    outputValue: 1.2
-    minValue: 0.7357483
+    inputValue: 0.5
+    outputValue: 0
+    minValue: 0.75
     maxValue: 1.2
     defaultMinValue: -3
     defaultMaxValue: 3
@@ -134,6 +136,7 @@ MonoBehaviour:
     propertyEvaluationType: 0
     propertyControlType: 0
     propertyType: 2
+    showProperty: 0
     curve:
       serializedVersion: 2
       m_Curve:
@@ -170,7 +173,7 @@ MonoBehaviour:
     level: {x: 0, y: 1}
     labels: []
     inputValue: 0.5
-    outputValue: 0.5
+    outputValue: 1
     minValue: 0
     maxValue: 1
     defaultMinValue: 0

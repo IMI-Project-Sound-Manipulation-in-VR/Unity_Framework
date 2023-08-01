@@ -1,6 +1,5 @@
 using System;
-using System.Collections;
-using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Reflection;
 using FMODUnity;
@@ -16,28 +15,76 @@ public enum SoundInstanceEditorType
 public class SoundInstanceEditor : MonoBehaviour
 {
     // Editor Type
-    public SoundInstanceEditorType editorType;
-    private SoundInstanceEditorType previousEditorType;
+    [SerializeField]
+    private SoundInstanceEditorType editorType;
+    public SoundInstanceEditorType EditorType
+    {
+        get { return editorType; }
+        set {
+            if(value != editorType)
+            {
+                editorType = value;
+                SetupEditorObject();
+            }
+            editorType = value;
+        }
+    }
+
+    // Sound Instance Editor Object
     private SoundInstanceEditorObject soundInstanceEditorObject;
-    public SoundInstanceEditorObject SoundInstanceEditorObject { get { return soundInstanceEditorObject; }}
+    public SoundInstanceEditorObject SoundInstanceEditorObject => soundInstanceEditorObject;
 
     // Unity
+    // Audio Clip Reference
     [SerializeField]
     private AudioClip audioClipReference;
-    public AudioClip AudioClipReference { get { return audioClipReference; }}
-    private AudioClip previousAudioClipReference;
-    private AudioSource audioSourceReference;
-    public AudioSource AudioSourceReference { get { return audioSourceReference; } set { audioSourceReference = value; }}
+    public AudioClip AudioClipReference 
+    {
+        get { return audioClipReference; }
+        set 
+        {
+            if(value != audioClipReference)
+            {
+                audioClipReference = value;
+                if(editorType != SoundInstanceEditorType.Unity) { return; }
+                if(audioClipReference != null)
+                {
+                    SetupEditorObject();
+                } else {
+                    ResetSoundInstanceEditor();
+                }
+            }
+            audioClipReference = value;
+        }
+    }
 
-    // FMOD
+    public AudioSource AudioSourceReference { get; set; }
+
+    // FMOD Event reference
     [SerializeField]
     private EventReference fmodEventReference;
-    public EventReference FmodEventReference { get { return fmodEventReference; } }
-    private EventReference previousFmodEventReference;
+    private Guid previousGuid;
+    public EventReference FmodEventReference
+    {
+        get { return fmodEventReference; }
+        set 
+        {
+            if(value.Guid != previousGuid)
+            {
+                fmodEventReference = value;
+                previousGuid = value.Guid;
+                if(EditorType != SoundInstanceEditorType.Fmod) { return; }
+                SetupEditorObject();
+            }
+            fmodEventReference = value;
+            previousGuid = value.Guid;
+        }
+    }
 
     // Manager Level
     private float managerLevel;
     private bool managerLevelActive;
+    public bool ShowInManager { get; set; }
 
     // Editor Level
     private float editorLevel;
@@ -47,8 +94,8 @@ public class SoundInstanceEditor : MonoBehaviour
     // Reflection external script
     [SerializeField] private MonoBehaviour reflectionScript;
     public Type reflectionScriptType;
-    // TODO
-    public PropertyInfo[] reflectionScriptProperties;
+    public PropertyInfo[] ReflectionScriptProperties { get; set; }
+    private bool reflectionScriptActive;
 
     // Properties
     private bool addProperty;
@@ -64,17 +111,17 @@ public class SoundInstanceEditor : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        UpdateMethods();
+        UpdateInspectorAndOnRunning();
     }
 
     // Public
-    public void UpdateManagerLevel(bool active, float value)
+    public void SetManagerLevel(bool active, float value)
     {
         this.managerLevelActive = active;
         this.managerLevel = value;
     }
 
-    public void UpdateEditorLevel(bool active, float value)
+    public void SetEditorLevel(bool active, float value)
     {
         this.editorLevelActive = active;
         this.managerLevel = value;
@@ -83,7 +130,7 @@ public class SoundInstanceEditor : MonoBehaviour
     // Inspector GUI Methods
     public void DrawInspectorGUIDefaultInfo()
     {
-        editorType = (SoundInstanceEditorType) EditorGUILayout.EnumPopup("Editor Type", editorType);
+        EditorType = (SoundInstanceEditorType) EditorGUILayout.EnumPopup("Editor Type", editorType);
     }
 
     public void DrawInspectorGUI()
@@ -94,196 +141,31 @@ public class SoundInstanceEditor : MonoBehaviour
 
             GUILayout.Label("Sound Instance Editor: " + soundInstanceEditorObject.InstanceName);
             
-            //////////// EDITOR LEVEL
-            GUILayout.BeginHorizontal();
+            DrawInspectorGUIEditorLevel();
 
-            string editorLevelString = "Editor Level";
-            if (editorLevelProperty != null && !managerLevelActive)
-            {
-                editorLevelString += " (controlled by script)";
-            }
-            else if (managerLevelActive)
-            {
-                editorLevelString += " (controlled by manager level)";
-            }
+            DrawInspectorGUIPresets();
 
-            EditorGUI.BeginDisabledGroup(editorLevelActive == false || editorLevelProperty != null || managerLevelActive == true);
-            
-            if(managerLevelActive) { 
-                editorLevel = EditorGUILayout.Slider(editorLevelString, managerLevel, 0, 1);
-            } else { 
-                editorLevel = EditorGUILayout.Slider(editorLevelString, editorLevel, 0, 1);
-            }
-            EditorGUI.EndDisabledGroup();
-
-            editorLevelActive = EditorGUILayout.Toggle(editorLevelActive);
-
-            GUILayout.EndHorizontal();
-
-            //////////// PRESETS
-            if(editorType == SoundInstanceEditorType.Unity)
-            {
-                // popup or dropdown list for selecting presets
-                string[] audioSourcePropertiesPresetsStrings = System.Array.ConvertAll(soundInstanceEditorObject.propertyPresets, obj => obj.name);
-                soundInstanceEditorObject.selectedPropertyPresetIndex = EditorGUILayout.Popup("Presets", soundInstanceEditorObject.selectedPropertyPresetIndex, audioSourcePropertiesPresetsStrings);
-                if(soundInstanceEditorObject.selectedPropertyPresetIndex != soundInstanceEditorObject.previousPropertyPresetIndex)
-                {
-                    soundInstanceEditorObject.previousPropertyPresetIndex = soundInstanceEditorObject.selectedPropertyPresetIndex;
-                    soundInstanceEditorObject.SetAudioPropertiesFromPreset();
-                }
-            }
-            
-
-            //////////// AUDIO PROPERTIES
             EditorGUI.indentLevel++;
-            if(soundInstanceEditorObject.AudioProperties != null)
-            {
-                for (int i = 0; i < soundInstanceEditorObject.AudioProperties.Count; i++)
-                {
-                    SoundInstanceEditorAudioProperty property = soundInstanceEditorObject.AudioProperties[i];
 
-                    // get the name of the property
-                    string foldoutName =  char.ToUpper(property.propertyName[0]) + property.propertyName.Substring(1);
-                    if(property.propertyControlType != SoundInstanceEditorAudioPropertyControlType.None) { foldoutName += "(" + property.propertyControlType.ToString() + ")"; }
-
-                    // display a foldout for current property
-                    GUILayout.BeginVertical(GUI.skin.box);
-                    soundInstanceEditorObject.AudioPropertyFoldouts[i] = EditorGUILayout.Foldout(soundInstanceEditorObject.AudioPropertyFoldouts[i], foldoutName);
-                    if(soundInstanceEditorObject.AudioPropertyFoldouts[i]){
-                        // TODO: Make space between property type controlls and input/output
-                        property.propertyEvaluationType = (SoundInstanceEditorAudioPropertyEvaluationType) EditorGUILayout.EnumPopup("Property Type", property.propertyEvaluationType);
-
-                        switch(property.propertyEvaluationType)
-                        {
-                            case SoundInstanceEditorAudioPropertyEvaluationType.Curve:
-                                Rect curveRect = EditorGUILayout.GetControlRect();
-                                property.curve = EditorGUI.CurveField(curveRect, "Curve", property.curve);
-
-                                EditorGUI.BeginDisabledGroup(property.propertyControlType != SoundInstanceEditorAudioPropertyControlType.None);
-                                property.inputValue = EditorGUILayout.Slider("Input Value", property.inputValue, 0, 1);
-                                EditorGUI.EndDisabledGroup();
-
-                                GUI.enabled = false;
-                                property.outputValue = EditorGUILayout.Slider("Output Value: ", property.outputValue, property.minValue, property.maxValue);
-                                GUI.enabled = true;
-
-                                break;
-                            case SoundInstanceEditorAudioPropertyEvaluationType.Labeled:
-
-                                EditorGUI.BeginDisabledGroup(property.propertyControlType != SoundInstanceEditorAudioPropertyControlType.None);
-                                property.inputValue = EditorGUILayout.Slider("Input Value", property.inputValue, 0, 1);
-                                EditorGUI.EndDisabledGroup();
-
-                                GUI.enabled = false;
-                                property.outputValue = EditorGUILayout.IntSlider("Output Value", (int) property.outputValue, (int) property.minValue, (int) property.maxValue);
-                                // Display the corresponding string label for the selected slider value
-                                if(property.labels.Length == 0)
-                                {
-                                    EditorGUILayout.LabelField("Property has no labels");
-                                } else {
-                                    EditorGUILayout.LabelField("Selected Label: ", property.labels[(int) property.outputValue]);
-                                }
-                                GUI.enabled = true;
-
-                                break;
-                            case SoundInstanceEditorAudioPropertyEvaluationType.Level:
-                                GUILayout.BeginHorizontal();
-                                EditorGUILayout.LabelField("Level");
-                                GUILayout.Label(property.level.x.ToString("F2"), GUILayout.Width(30));
-                                EditorGUILayout.MinMaxSlider(ref property.level.x, ref property.level.y, 0.0f, 1.0f);
-                                GUILayout.Label(property.level.y.ToString("F2"), GUILayout.Width(30));
-                                GUILayout.EndHorizontal();
-                                EditorGUILayout.Space();
-
-                                EditorGUI.BeginDisabledGroup(property.propertyControlType != SoundInstanceEditorAudioPropertyControlType.None);
-                                property.inputValue = EditorGUILayout.Slider("Input Value", property.inputValue, 0, 1);
-                                EditorGUI.EndDisabledGroup();
-
-                                GUI.enabled = false;
-                                bool b = property.outputValue != 0.0f;
-                                property.outputValue = EditorGUILayout.Toggle("Active: ", b) ? 1.0f : 0.0f;
-                                GUI.enabled = true;
-
-                                break;
-                            case SoundInstanceEditorAudioPropertyEvaluationType.Linear:
-                                property.minValue = EditorGUILayout.FloatField("Min Value", property.minValue);
-                                property.maxValue = EditorGUILayout.FloatField("Max Value", property.maxValue);
-
-                                EditorGUI.BeginDisabledGroup(property.propertyControlType != SoundInstanceEditorAudioPropertyControlType.None);
-                                property.inputValue = EditorGUILayout.Slider("Input Value", property.inputValue, 0, 1);
-                                EditorGUI.EndDisabledGroup();
-
-                                GUI.enabled = false;
-                                property.outputValue = EditorGUILayout.Slider("Output Value: ", property.outputValue, property.minValue, property.maxValue);
-                                GUI.enabled = true;
-
-                                break;
-                        }
-                        
-                        ///////// REMOVING AUDIO PROPERTIES
-                        if(property.propertyType != SoundInstanceEditorAudioPropertyType.FmodParameter)
-                        {
-                            if (GUILayout.Button("Remove Property")) {
-                                soundInstanceEditorObject.RemoveAudioProperty(i);
-                            }
-                        }
-                    }
-
-                    GUILayout.EndVertical();
-                }
-            }
+            DrawInspectorGUISoundProperties();
+            
             EditorGUI.indentLevel--;
 
-            if(editorType == SoundInstanceEditorType.Unity)
-            {
-                //////////// ADDING AUDIO PROPERTIES
-                if(addProperty){
-                    EditorGUILayout.BeginHorizontal();
+            DrawInspectorGUIAddingAudioProperties();
 
-                    // will display the names of all available property templates
-                    string[] propertyNames = System.Array.ConvertAll(soundInstanceEditorObject.PropertyTemplates , obj => obj.propertyData.propertyName);
-                    
-                    // if this button is pressed, addproperty will be set to false
-                    // which will hide the current display
-                    addProperty = !GUILayout.Button("Go back", GUILayout.Width(100));
+            DrawInspectorGUISaveAudioPropertiesAsExistingPreset();
 
-                    // a popup that will select the index of the selected template indexx
-                    soundInstanceEditorObject.selectedPropertyTemplateIndex = EditorGUILayout.Popup(soundInstanceEditorObject.selectedPropertyTemplateIndex, propertyNames);
+            DrawInspectorGUISaveAudioPropertiesAsNewPreset();
+            
+            GUILayout.EndVertical();
+        }
+    }
 
-                    // if the add button is clicked
-                    if (GUILayout.Button("Add", GUILayout.Width(100)))
-                    {
-                        //add the property template to the preset
-                        soundInstanceEditorObject.AddNewAudioProperty();
-
-                        // set "addProperty" to false, to hide current display after adding a new template
-                        addProperty = false;
-                    }
-
-                    EditorGUILayout.EndHorizontal();
-                }
-                else 
-                {
-                    // a button to display the menu to add a new template to the property preset
-                    addProperty = GUILayout.Button("Add new property");
-                }
-
-                //////////// SAVING PROPERTY CONFIGURATION AS PRESET
-                GUILayout.Space(10);
-
-                if(!soundInstanceEditorObject.ComparePresetWithAudioProperties())
-                {
-                    if (GUILayout.Button("Save configuration to current preset"))
-                    {
-                        SoundInstanceEditorAudioPropertyPreset currentPreset = soundInstanceEditorObject.propertyPresets[soundInstanceEditorObject.selectedPropertyPresetIndex];
-                        SoundInstanceEditorAudioProperty[] audioPropertiesArray = soundInstanceEditorObject.AudioProperties.ToArray();
-                        currentPreset.UpdatePropertiesArray(audioPropertiesArray);
-                        soundInstanceEditorObject.SetAudioPropertiesFromPreset();
-                    }
-                }
-
-                /////////////// SAVE PROPERTY CONFIGURATION AS NEW PRESET
-                if(addPreset){
+    private void DrawInspectorGUISaveAudioPropertiesAsNewPreset()
+    {
+        if(editorType == SoundInstanceEditorType.Unity)
+        {
+            if(addPreset){
                     EditorGUILayout.BeginHorizontal();
 
                     // if this button is pressed, addproperty will be set to false
@@ -295,33 +177,281 @@ public class SoundInstanceEditor : MonoBehaviour
 
                     if (GUILayout.Button("Add new preset", GUILayout.Width(100)))
                     {
-                        // TODO: doesnt seem to work, when its a package
-                        string assetPath = "Packages" + "/" + "Sound Instance Manager" + "/" + "Resources" + "/" + "Audio Property Presets" + "/" + presetName + ".asset";
-                        SoundInstanceEditorAudioPropertyPreset newPreset = ScriptableObject.CreateInstance<SoundInstanceEditorAudioPropertyPreset>();
-                        newPreset.propertiesArray = soundInstanceEditorObject.AudioProperties.ToArray();
+                        string directoryPath = "Assets" + "/" + "Scenes" + "/" + "Resources" + "/" + "Audio Property Presets";
 
-                        if(!string.IsNullOrEmpty(assetPath))
+                        // Check if the directory exists
+                        if (!Directory.Exists(directoryPath))
                         {
+                            // If the directory doesn't exist, create it
+                            Directory.CreateDirectory(directoryPath);
+                        }
+
+                        if(!string.IsNullOrEmpty(presetName))
+                        {
+                            string assetPath = directoryPath + "/" + presetName + ".asset";
+
+                            SoundInstanceEditorAudioPropertyPreset newPreset = ScriptableObject.CreateInstance<SoundInstanceEditorAudioPropertyPreset>();
+                            newPreset.propertiesArray = soundInstanceEditorObject.AudioProperties.ToArray();
+                        
                             AssetDatabase.CreateAsset(newPreset, assetPath);
                             AssetDatabase.SaveAssets();
                             AssetDatabase.Refresh();
+
+
+                            soundInstanceEditorObject.LoadPropertyPresets();
+                            soundInstanceEditorObject.SelectedPropertyPresetIndex = System.Array.FindIndex(soundInstanceEditorObject.PropertyPresets, p => p.name == presetName);
+                            soundInstanceEditorObject.SetAudioPropertiesFromPreset();
+
+                            addPreset = false;
                         }
-
-                        soundInstanceEditorObject.LoadPropertyPresets();
-                        soundInstanceEditorObject.selectedPropertyPresetIndex = System.Array.FindIndex(soundInstanceEditorObject.propertyPresets, p => p.name == presetName);
-                        soundInstanceEditorObject.SetAudioPropertiesFromPreset();
-
-                        addPreset = false;
+                        
                     }
 
                     EditorGUILayout.EndHorizontal();
                 } else {
                     addPreset = GUILayout.Button("Save configuration as new preset");
                 }
-            }
-            
-            GUILayout.EndVertical();
         }
+    }
+
+    private void DrawInspectorGUISaveAudioPropertiesAsExistingPreset()
+    {
+        if(editorType == SoundInstanceEditorType.Unity)
+        {
+            if(!soundInstanceEditorObject.ComparePresetWithAudioProperties())
+            {
+                if (GUILayout.Button("Save changes to preset"))
+                {
+                    SoundInstanceEditorAudioPropertyPreset currentPreset = soundInstanceEditorObject.PropertyPresets[soundInstanceEditorObject.SelectedPropertyPresetIndex];
+                    SoundInstanceEditorAudioProperty[] audioPropertiesArray = soundInstanceEditorObject.AudioProperties.ToArray();
+                    currentPreset.UpdatePropertiesArray(audioPropertiesArray);
+                    soundInstanceEditorObject.SetAudioPropertiesFromPreset();
+                }
+            }
+    }
+    }
+
+    private void DrawInspectorGUIAddingAudioProperties()
+    {
+        if(editorType == SoundInstanceEditorType.Unity)
+        {
+            if(addProperty){
+                EditorGUILayout.BeginHorizontal();
+
+                // will display the names of all available property templates
+                string[] propertyNames = System.Array.ConvertAll(soundInstanceEditorObject.PropertyTemplates , obj => obj.propertyData.propertyName);
+                
+                // if this button is pressed, addproperty will be set to false
+                // which will hide the current display
+                addProperty = !GUILayout.Button("Go back", GUILayout.Width(100));
+
+                // a popup that will select the index of the selected template indexx
+                soundInstanceEditorObject.SelectedPropertyTemplateIndex = EditorGUILayout.Popup(soundInstanceEditorObject.SelectedPropertyTemplateIndex, propertyNames);
+
+                // if the add button is clicked
+                if (GUILayout.Button("Add", GUILayout.Width(100)))
+                {
+                    //add the property template to the preset
+                    soundInstanceEditorObject.AddNewAudioProperty();
+
+                    // set "addProperty" to false, to hide current display after adding a new template
+                    addProperty = false;
+                }
+
+                EditorGUILayout.EndHorizontal();
+            }
+            else 
+            {
+                // a button to display the menu to add a new template to the property preset
+                addProperty = GUILayout.Button("Add new property");
+            }
+        }
+    }
+
+    private void DrawInspectorGUISoundProperties()
+    {   
+        // check if list of audio properties have been initialized
+        if(soundInstanceEditorObject.AudioProperties != null)
+        {
+            // iterate over all audio properties
+            for (int i = 0; i < soundInstanceEditorObject.AudioProperties.Count; i++)
+            {
+                // take current property from list
+                SoundInstanceEditorAudioProperty property = soundInstanceEditorObject.AudioProperties[i];
+
+                // get the name of the property
+                string foldoutName =  char.ToUpper(property.propertyName[0]) + property.propertyName.Substring(1);
+                if(property.propertyControlType != SoundInstanceEditorAudioPropertyControlType.None) { foldoutName += "(" + property.propertyControlType.ToString() + ")"; }
+
+                // display a foldout for current property
+                // will control whether the property will be show in the inspector or not
+                GUILayout.BeginVertical(GUI.skin.box);
+                property.showProperty = EditorGUILayout.Foldout(property.showProperty, foldoutName);
+                // if the property can be displayed
+                if(property.showProperty){
+                    // TODO: Make space between property type controlls and input/output
+                    // display a enum popup for the property evaluation type
+                    property.propertyEvaluationType = (SoundInstanceEditorAudioPropertyEvaluationType) EditorGUILayout.EnumPopup("Property Type", property.propertyEvaluationType);
+
+                    // switch through the property evaluation types
+                    // the property evaluation types, will display different controlls of how a input value should be evaluated
+                    switch(property.propertyEvaluationType)
+                    {
+                        // the curve controll will evaluate a input value
+                        // according to the animation curve field
+                        case SoundInstanceEditorAudioPropertyEvaluationType.Curve:
+                            // will display the animation curve in the inspector
+                            Rect curveRect = EditorGUILayout.GetControlRect();
+                            property.curve = EditorGUI.CurveField(curveRect, "Curve", property.curve);
+
+                            // will display the input slider, that can be controlled by the user 
+                            // will be disabled if a control type has been set
+                            // NONE indicates no external control over the property
+                            EditorGUI.BeginDisabledGroup(property.propertyControlType != SoundInstanceEditorAudioPropertyControlType.None);
+                            property.inputValue = EditorGUILayout.Slider("Input Value", property.inputValue, 0, 1);
+                            EditorGUI.EndDisabledGroup();
+
+                            // displays the output value on a slider, simply for visualization
+                            GUI.enabled = false;
+                            property.outputValue = EditorGUILayout.Slider("Output Value: ", property.outputValue, property.minValue, property.maxValue);
+                            GUI.enabled = true;
+
+                            break;
+                        // the labeled evaluation type will evaluate a input value to a set of lables
+                        // for example, given two labels "a" and "b", a input value between 0.0-0.5 will evaluate "a" and 0.5-1.0 will evaluate "b"
+                        case SoundInstanceEditorAudioPropertyEvaluationType.Labeled:
+
+                            // will display the input slider, that can be controlled by the user 
+                            // will be disabled if a control type has been set
+                            // NONE indicates no external control over the property
+                            EditorGUI.BeginDisabledGroup(property.propertyControlType != SoundInstanceEditorAudioPropertyControlType.None);
+                            property.inputValue = EditorGUILayout.Slider("Input Value", property.inputValue, 0, 1);
+                            EditorGUI.EndDisabledGroup();
+
+                            // displays the output value on a slider and as a separate label, simply for visualization
+                            GUI.enabled = false;
+                            property.outputValue = EditorGUILayout.IntSlider("Output Value", (int) property.outputValue, (int) property.minValue, (int) property.maxValue);
+                            // Display the corresponding string label for the selected slider value
+                            if(property.labels.Length == 0)
+                            {
+                                EditorGUILayout.LabelField("Property has no labels");
+                            } else {
+                                EditorGUILayout.LabelField("Selected Label: ", property.labels[(int) property.outputValue]);
+                            }
+                            GUI.enabled = true;
+
+                            break;
+                        // the evaluation type level, evaluates normalized value to a boolean value, or rather a float value of 0.0f or 1.0f
+                        // if the input value is between the levels vector2 x and y values, the output will be 1.0f, else 0.0f
+                        case SoundInstanceEditorAudioPropertyEvaluationType.Level:
+
+                            // will display a min max slider which lets the user control the vectors2 x and y levels
+                            GUILayout.BeginHorizontal();
+                            EditorGUILayout.LabelField("Level");
+                            GUILayout.Label(property.level.x.ToString("F2"), GUILayout.Width(30));
+                            EditorGUILayout.MinMaxSlider(ref property.level.x, ref property.level.y, 0.0f, 1.0f);
+                            GUILayout.Label(property.level.y.ToString("F2"), GUILayout.Width(30));
+                            GUILayout.EndHorizontal();
+                            EditorGUILayout.Space();
+                            
+                            // will display the input slider, that can be controlled by the user 
+                            // will be disabled if a control type has been set
+                            // NONE indicates no external control over the property
+                            EditorGUI.BeginDisabledGroup(property.propertyControlType != SoundInstanceEditorAudioPropertyControlType.None);
+                            property.inputValue = EditorGUILayout.Slider("Input Value", property.inputValue, 0, 1);
+                            EditorGUI.EndDisabledGroup();
+
+                            // displays the output value as a toggle, simply for visualization
+                            GUI.enabled = false;
+                            bool b = property.outputValue != 0.0f;
+                            property.outputValue = EditorGUILayout.Toggle("Active: ", b) ? 1.0f : 0.0f;
+                            GUI.enabled = true;
+
+                            break;
+                        // the evaluation type linear, will linearly evaluate a input value between the set
+                        // min and max values. for example given a min and max value of -1f and 1f
+                        // a input value of 0.5f would equal a output value of 0.0f
+                        case SoundInstanceEditorAudioPropertyEvaluationType.Linear:
+                            // displays a float field for user controlled min and max values
+                            property.minValue = EditorGUILayout.FloatField("Min Value", property.minValue);
+                            property.maxValue = EditorGUILayout.FloatField("Max Value", property.maxValue);
+
+                            // will display the input slider, that can be controlled by the user 
+                            // will be disabled if a control type has been set
+                            // NONE indicates no external control over the property
+                            EditorGUI.BeginDisabledGroup(property.propertyControlType != SoundInstanceEditorAudioPropertyControlType.None);
+                            property.inputValue = EditorGUILayout.Slider("Input Value", property.inputValue, 0, 1);
+                            EditorGUI.EndDisabledGroup();
+
+                            // displays the output value on a slider, simply for visualization
+                            GUI.enabled = false;
+                            property.outputValue = EditorGUILayout.Slider("Output Value: ", property.outputValue, property.minValue, property.maxValue);
+                            GUI.enabled = true;
+
+                            break;
+                    }
+                    
+                    // field for removing current property
+                    if(property.propertyType != SoundInstanceEditorAudioPropertyType.FmodParameter)
+                    {
+                        if (GUILayout.Button("Remove Property")) {
+                            soundInstanceEditorObject.RemoveAudioProperty(i);
+                        }
+                    }
+                }
+
+                GUILayout.EndVertical();
+            }
+        }
+    }
+
+    private void DrawInspectorGUIPresets()
+    {
+        // presets are currently only present for unity sound
+        if(editorType == SoundInstanceEditorType.Unity)
+            {
+                // popup or dropdown list for selecting presets
+                string[] audioSourcePropertiesPresetsStrings = System.Array.ConvertAll(soundInstanceEditorObject.PropertyPresets, obj => obj.name);
+                soundInstanceEditorObject.SelectedPropertyPresetIndex = EditorGUILayout.Popup("Presets", soundInstanceEditorObject.SelectedPropertyPresetIndex, audioSourcePropertiesPresetsStrings);
+                if(soundInstanceEditorObject.SelectedPropertyPresetIndex != soundInstanceEditorObject.PreviousPropertyPresetIndex)
+                {
+                    soundInstanceEditorObject.PreviousPropertyPresetIndex = soundInstanceEditorObject.SelectedPropertyPresetIndex;
+                    soundInstanceEditorObject.SetAudioPropertiesFromPreset();
+                }
+            }
+    }
+
+    private void DrawInspectorGUIEditorLevel()
+    {
+        GUILayout.BeginHorizontal();
+
+        string editorLevelString = "Editor Level";
+        // check if manager level is active or the editor level is controlled by a script property
+        // will then add a postfix to the editor level string, just for information
+        if (editorLevelProperty != null && !managerLevelActive)
+        {
+            editorLevelString += " (controlled by script)";
+        }
+        else if (managerLevelActive)
+        {
+            editorLevelString += " (controlled by manager level)";
+        }
+
+        // disable the slider if manager level is active or if the editor level is disabled
+        EditorGUI.BeginDisabledGroup(editorLevelActive == false || editorLevelProperty != null || managerLevelActive == true);
+        
+        // if the manager level is active, the editor level value will be replaced by the manager level value
+        if(managerLevelActive) { 
+            editorLevel = EditorGUILayout.Slider(editorLevelString, managerLevel, 0, 1);
+        } else { 
+            editorLevel = EditorGUILayout.Slider(editorLevelString, editorLevel, 0, 1);
+        }
+        EditorGUI.EndDisabledGroup();
+
+        // toggle to enable editor level
+        editorLevelActive = EditorGUILayout.Toggle(editorLevelActive);
+
+        GUILayout.EndHorizontal();
     }
 
     // Private
@@ -348,15 +478,6 @@ public class SoundInstanceEditor : MonoBehaviour
         reflectionScriptType = reflectionScript ? reflectionScript.GetType() : null;
     }
 
-    private void UpdateOnEditorTypeChanged()
-    {
-        if(previousEditorType != editorType)
-        {
-            previousEditorType = editorType;
-            SetupEditorObject();
-        }
-    }
-
     // Private
 
     private void LoadPropertyTemplates()
@@ -371,44 +492,33 @@ public class SoundInstanceEditor : MonoBehaviour
         soundInstanceEditorObject.LoadPropertyPresets();
     }
 
-    public void UpdateMethods()
+    public void UpdateInspectorAndOnRunning()
     {
-        UpdateOnEditorTypeChanged();
-        CheckAudioClipChange();
-        CheckEventReferenceChange();
-        UpdateAudioProperties();
+        CheckReflectionScriptActive();
+        UpdateAudioPropertyValues();
+    }
+
+    public void UpdateInspectorOnly()
+    {
         LoadPropertyTemplates();
         LoadPropertyPresets();
     }
 
-    private void CheckAudioClipChange()
+    private void CheckReflectionScriptActive()
     {
-        if(editorType != SoundInstanceEditorType.Unity) { return; }
-        if(audioClipReference != null)
+        if(reflectionScript != null)
         {
-            if(!audioClipReference.Equals(previousAudioClipReference))
+            if(reflectionScript.gameObject.activeInHierarchy != reflectionScriptActive)
             {
-                previousAudioClipReference = audioClipReference;
-                SetupEditorObject();
+                reflectionScriptActive = reflectionScript.gameObject.activeInHierarchy;
+                if(soundInstanceEditorObject != null) { 
+                    soundInstanceEditorObject.SetAudioProperties();
+                }
             }
-        } else {
-            previousAudioClipReference = audioClipReference;
-            ResetSoundInstanceEditor();
         }
     }
 
-    private void CheckEventReferenceChange()
-    {
-        if(editorType != SoundInstanceEditorType.Fmod) { return; }
-        if(!fmodEventReference.Guid.Equals(previousFmodEventReference.Guid))
-        {
-            previousFmodEventReference = fmodEventReference;
-            
-            SetupEditorObject();
-        }
-    }
-
-    private void UpdateAudioProperties()
+    private void UpdateAudioPropertyValues()
     {
         if(soundInstanceEditorObject == null) return;
         if(soundInstanceEditorObject.AudioProperties == null) return;
@@ -416,10 +526,10 @@ public class SoundInstanceEditor : MonoBehaviour
         for (int index = 0; index < soundInstanceEditorObject.AudioProperties.Count; index++)
         {
             SoundInstanceEditorAudioProperty property = soundInstanceEditorObject.AudioProperties[index];
-            PropertyInfo reflectionAudioProperty = reflectionScriptProperties[index];
+            PropertyInfo reflectionAudioProperty = ReflectionScriptProperties[index];
             // TODO: catch if property doesnt have matching audio property
 
-            PropertyInfo reflectionScriptProperty = reflectionScriptProperties != null ? reflectionScriptProperties[index] : null;
+            PropertyInfo reflectionScriptProperty = ReflectionScriptProperties != null ? ReflectionScriptProperties[index] : null;
             
             float inputValue = 0;
 
@@ -496,6 +606,25 @@ public class SoundInstanceEditor : MonoBehaviour
         }
     }
 
+    public void InitializeEditorObject()
+    {
+        ResetSoundInstanceEditor();
+        switch (editorType)
+        {
+            case SoundInstanceEditorType.Unity:
+                if(audioClipReference != null && soundInstanceEditorObject == null)
+                {
+                    soundInstanceEditorObject = new SoundInstanceEditorObjectUnity(this);
+                }
+                break;
+            case SoundInstanceEditorType.Fmod:
+                if(!fmodEventReference.Guid.IsNull && soundInstanceEditorObject == null){
+                    soundInstanceEditorObject = new SoundInstanceEditorObjectFmod(this);
+                }
+                break;
+        }
+    }
+
     [CustomEditor(typeof(SoundInstanceEditor))]
     public class SoundInstanceEditorInspector : UnityEditor.Editor
     {
@@ -510,38 +639,50 @@ public class SoundInstanceEditor : MonoBehaviour
             eventReferenceProperty = serializedObject.FindProperty("fmodEventReference");
             audioClipProperty = serializedObject.FindProperty("audioClipReference");
             reflectionScriptProperty = serializedObject.FindProperty("reflectionScript");
-
-            // SoundInstanceEditor.SetupEditorObject();
         }
 
         public override void OnInspectorGUI()
         {
             serializedObject.Update();
 
-            // TODO: dont update method in "Update" and on inspector gui, else it will update twice per step
-            // see manager script
-            SoundInstanceEditor.UpdateMethods();
+            if (!Application.isPlaying)
+            {
+                SoundInstanceEditor.UpdateInspectorAndOnRunning();
+                SoundInstanceEditor.UpdateInspectorOnly();
+            }
 
             SoundInstanceEditor.DrawInspectorGUIDefaultInfo();
 
+            DrawSerializedProperties();
+
+            SoundInstanceEditor.DrawInspectorGUI();
+
+            serializedObject.ApplyModifiedProperties();
+        }
+
+        
+        private void DrawSerializedProperties()
+        {   
+            // Displays, depending on whether FMOD or Unity has been selected as editor type,
+            // either a property field for a FMOD event or Unity Audio Clip
+            // it will set the reference to the appropriate property, which in turn will trigger the property setter
             EditorGUILayout.Space();
             if(SoundInstanceEditor.editorType == SoundInstanceEditorType.Fmod)
             { 
                 EditorGUILayout.PropertyField(eventReferenceProperty);
+                EventReference eventReference = (EventReference) eventReferenceProperty.GetEventReference();
+                SoundInstanceEditor.FmodEventReference = eventReference;
             }
             else if(SoundInstanceEditor.editorType == SoundInstanceEditorType.Unity)
             {
                 EditorGUILayout.PropertyField(audioClipProperty);
+                SoundInstanceEditor.AudioClipReference = (AudioClip) audioClipProperty.objectReferenceValue;
             }
 
             if(!Application.isPlaying)
             {
                 EditorGUILayout.PropertyField(reflectionScriptProperty);
             }
-
-            SoundInstanceEditor.DrawInspectorGUI();
-
-            serializedObject.ApplyModifiedProperties();
         }
     }
 }

@@ -17,9 +17,6 @@ public class SoundInstanceManager : MonoBehaviour
     private bool showInstanceEditorsUnity;
     private bool showInstanceEditorsFmod;
 
-    private bool[] soundInstanceEditorFoldoutsUnity;
-    private bool[] soundInstanceEditorFoldoutsFmod;
-
     [SerializeField]
     private MonoBehaviour script;
     private Type scriptType;
@@ -31,16 +28,14 @@ public class SoundInstanceManager : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-        
+        InitializeEditorObjects();
     }
 
     // Update is called once per frame
     void Update()
     {
-        if (Application.isPlaying)
-        {
-            UpdateSoundInstanceMethods();
-        }
+        UpdateSoundInstances();
+        UpdateSoundInstanceMethods();
     }
 
     public void UpdateSoundInstanceMethods()
@@ -48,15 +43,15 @@ public class SoundInstanceManager : MonoBehaviour
         for(int i = 0; i < soundInstancesUnity.Length; i++)
         {
             SoundInstanceEditor soundInstance = soundInstancesUnity[i];
-            soundInstance.UpdateManagerLevel(managerLevelActive, managerLevel);
-            soundInstance.UpdateMethods();
+            soundInstance.SetManagerLevel(managerLevelActive, managerLevel);
+            soundInstance.UpdateInspectorAndOnRunning();
         }
 
         for(int i = 0; i < soundInstancesFmod.Length; i++)
         {
             SoundInstanceEditor soundInstance = soundInstancesFmod[i];
-            soundInstance.UpdateManagerLevel(managerLevelActive, managerLevel);
-            soundInstance.UpdateMethods();
+            soundInstance.SetManagerLevel(managerLevelActive, managerLevel);
+            soundInstance.UpdateInspectorAndOnRunning();
         }
     }
 
@@ -89,14 +84,27 @@ public class SoundInstanceManager : MonoBehaviour
             for(int i = 0; i < soundInstancesUnity.Length; i++)
             {
                 SoundInstanceEditor soundInstance = soundInstancesUnity[i];
+
+                GUILayout.BeginHorizontal();
+
                 if(soundInstance.SoundInstanceEditorObject != null)
                 {
-                    soundInstanceEditorFoldoutsUnity[i] = EditorGUILayout.Foldout(soundInstanceEditorFoldoutsUnity[i], soundInstance.SoundInstanceEditorObject.InstanceName);
-                    if(soundInstanceEditorFoldoutsUnity[i])
-                    {
-                        soundInstance.DrawInspectorGUI();
-                    }
+                    soundInstance.ShowInManager = EditorGUILayout.Foldout(soundInstance.ShowInManager, soundInstance.SoundInstanceEditorObject.InstanceName);
+                } else {
+                    EditorGUILayout.LabelField("Editor has no audio source!");
                 }
+
+                if (GUILayout.Button("Go to Editor!")){
+                    Selection.activeObject = soundInstance.gameObject;
+                }
+
+                GUILayout.EndHorizontal();
+
+                if(soundInstance.ShowInManager && soundInstance.SoundInstanceEditorObject != null)
+                {
+                    soundInstance.DrawInspectorGUI();
+                }
+                
             }
             EditorGUI.indentLevel--;
         }
@@ -108,13 +116,24 @@ public class SoundInstanceManager : MonoBehaviour
             for(int i = 0; i < soundInstancesFmod.Length; i++)
             {
                 SoundInstanceEditor soundInstance = soundInstancesFmod[i];
+                GUILayout.BeginHorizontal();
+
                 if(soundInstance.SoundInstanceEditorObject != null)
                 {
-                    soundInstanceEditorFoldoutsFmod[i] = EditorGUILayout.Foldout(soundInstanceEditorFoldoutsFmod[i], soundInstance.SoundInstanceEditorObject.InstanceName);
-                    if(soundInstanceEditorFoldoutsFmod[i])
-                    {
-                        soundInstance.DrawInspectorGUI();
-                    }
+                    soundInstance.ShowInManager = EditorGUILayout.Foldout(soundInstance.ShowInManager, soundInstance.SoundInstanceEditorObject.InstanceName);
+                } else {
+                    EditorGUILayout.LabelField("Editor has not active audio source set!");
+                }
+
+                if (GUILayout.Button("Go to Editor!")){
+                    Selection.activeObject = soundInstance.gameObject;
+                }
+
+                GUILayout.EndHorizontal();
+
+                if(soundInstance.ShowInManager && soundInstance.SoundInstanceEditorObject != null)
+                {
+                    soundInstance.DrawInspectorGUI();
                 }
             }
             EditorGUI.indentLevel--;
@@ -135,11 +154,30 @@ public class SoundInstanceManager : MonoBehaviour
     public void UpdateSoundInstances()
     {
         SoundInstanceEditor[] soundInstances = UnityEngine.Object.FindObjectsOfType<SoundInstanceEditor>();
-        soundInstancesUnity = soundInstances.Where(obj => obj.editorType == SoundInstanceEditorType.Unity).ToArray();
-        soundInstanceEditorFoldoutsUnity = new bool[soundInstancesUnity.Length];
+        soundInstancesUnity = soundInstances.Where(obj => obj.EditorType == SoundInstanceEditorType.Unity).ToArray();
+        soundInstancesFmod = soundInstances.Where(obj => obj.EditorType == SoundInstanceEditorType.Fmod).ToArray();
+    }
 
-        soundInstancesFmod = soundInstances.Where(obj => obj.editorType == SoundInstanceEditorType.Fmod).ToArray();
-        soundInstanceEditorFoldoutsFmod = new bool[soundInstancesFmod.Length];
+    public void InitializeEditorObjects()
+    {
+        for(int i = 0; i < soundInstancesUnity.Length; i++)
+        {
+            SoundInstanceEditor soundInstance = soundInstancesUnity[i];
+            if(soundInstance.SoundInstanceEditorObject == null)
+            {
+                soundInstance.InitializeEditorObject();
+            }
+            
+        }
+
+        for(int i = 0; i < soundInstancesFmod.Length; i++)
+        {
+            SoundInstanceEditor soundInstance = soundInstancesFmod[i];
+            if(soundInstance.SoundInstanceEditorObject == null)
+            {
+                soundInstance.InitializeEditorObject();
+            }
+        }
     }
 }
 
@@ -151,7 +189,7 @@ public class SoundInstanceManagerEditor : UnityEditor.Editor
     private void OnEnable()
     {
         SoundInstanceManager = (SoundInstanceManager)target;
-        SoundInstanceManager.UpdateSoundInstances();
+        SoundInstanceManager.InitializeEditorObjects();
     }
 
     public override void OnInspectorGUI()
@@ -160,6 +198,7 @@ public class SoundInstanceManagerEditor : UnityEditor.Editor
 
         if (!Application.isPlaying)
         {
+            SoundInstanceManager.UpdateSoundInstances();
             SoundInstanceManager.UpdateSoundInstanceMethods();
         }
 

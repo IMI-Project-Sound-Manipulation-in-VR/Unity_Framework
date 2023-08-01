@@ -15,7 +15,9 @@ MonoBehaviour:
   propertyData:
     propertyName: Volume
     propertyEvaluationType: 0
+    propertyControlType: 0
     propertyType: 2
+    showProperty: 0
     curve:
       serializedVersion: 2
       m_Curve:

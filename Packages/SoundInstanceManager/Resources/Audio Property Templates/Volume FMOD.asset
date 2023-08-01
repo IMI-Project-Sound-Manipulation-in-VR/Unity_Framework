@@ -17,6 +17,7 @@ MonoBehaviour:
     propertyEvaluationType: 0
     propertyControlType: 0
     propertyType: 1
+    showProperty: 0
     curve:
       serializedVersion: 2
       m_Curve:
@@ -61,9 +62,9 @@ MonoBehaviour:
       m_RotationOrder: 4
     level: {x: 0, y: 1}
     labels: []
-    inputValue: 0.8709612
-    outputValue: 0.8709612
-    minValue: 0
+    inputValue: 0.419
+    outputValue: 0.7468145
+    minValue: 0.25
     maxValue: 1
     defaultMinValue: 0
     defaultMaxValue: 1

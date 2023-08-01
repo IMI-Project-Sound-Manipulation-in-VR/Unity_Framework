@@ -19,7 +19,6 @@ public class SoundInstanceEditorObjectFmod : SoundInstanceEditorObject
         
         LoadPropertyPresets();
         LoadPropertyTemplates();
-
         SetupAudioReference();
     }
 
@@ -37,7 +36,6 @@ public class SoundInstanceEditorObjectFmod : SoundInstanceEditorObject
         // List<SoundInstanceEditorAudioProperty> propertiesFromPropertiesList = RetrieveAudioPropertiesFromPropertiesList();
         // TODO: get properties from selections
         this.AudioProperties = propertiesFromTemplates.Concat(propertiesFromParameters).ToList();
-        this.AudioPropertyFoldouts = new bool[this.AudioProperties.Count];
 
         SetupScriptReflectionInfosFromAudioProperties();
     }
@@ -46,7 +44,7 @@ public class SoundInstanceEditorObjectFmod : SoundInstanceEditorObject
     {
         base.AddNewAudioProperty();
 
-        SoundInstanceEditorAudioPropertyTemplate template = this.PropertyTemplates[this.selectedPropertyTemplateIndex];
+        SoundInstanceEditorAudioPropertyTemplate template = this.PropertyTemplates[this.SelectedPropertyTemplateIndex];
         SoundInstanceEditorAudioProperty newAudioProperty = new SoundInstanceEditorAudioProperty();
         newAudioProperty.SetAudioPropertyFromPropertyTemplate(template);
         this.AudioProperties.Add(newAudioProperty);
@@ -61,20 +59,6 @@ public class SoundInstanceEditorObjectFmod : SoundInstanceEditorObject
         this.AudioProperties.RemoveAt(index);
 
         SetAudioProperties();
-    }
-
-    public override void LoadPropertyPresets()
-    {
-        base.LoadPropertyPresets();
-
-        this.propertyPresets = Resources.LoadAll<SoundInstanceEditorAudioPropertyPreset>("Audio Property Presets");
-    }
-
-    public override void LoadPropertyTemplates()
-    {
-        base.LoadPropertyTemplates();
-
-        this.PropertyTemplates = Resources.LoadAll<SoundInstanceEditorAudioPropertyTemplate>("Audio Property Templates");
     }
 
     public override void SetAudioPropertyValue(SoundInstanceEditorAudioProperty property, int index, float value)
@@ -150,7 +134,10 @@ public class SoundInstanceEditorObjectFmod : SoundInstanceEditorObject
         }
     }
 
-    // Public
+    public override void SetInstanceName()
+    {
+        this.InstanceName = eventAsset != null ? eventAsset.Path.Substring("event:/".Length) : "";
+    }
     
     // Private
     private void Play() 
@@ -171,11 +158,6 @@ public class SoundInstanceEditorObjectFmod : SoundInstanceEditorObject
     private void SetEventInformationFromReference()
     {
         eventAsset = EventManager.EventFromPath(editor.FmodEventReference.Path);
-    }
-
-    private void SetInstanceName()
-    {
-        this.InstanceName = eventAsset != null ? eventAsset.Path.Substring("event:/".Length) : "";
     }
 
     private List<SoundInstanceEditorAudioProperty> RetrieveAudioPropertiesFromFMODParameters() {
@@ -199,8 +181,15 @@ public class SoundInstanceEditorObjectFmod : SoundInstanceEditorObject
 
     private List<SoundInstanceEditorAudioProperty> RetrieveAudioPropertiesFromTemplates()
     {
-        SoundInstanceEditorAudioPropertyTemplate[] templates = this.PropertyTemplates;
-        return templates.Select(obj => obj.propertyData).Where(obj => obj.propertyType == SoundInstanceEditorAudioPropertyType.FmodAudioProperty).ToList();
+        SoundInstanceEditorAudioPropertyTemplate[] filteredTemplates = this.PropertyTemplates.Where(obj => obj.propertyData.propertyType == SoundInstanceEditorAudioPropertyType.FmodAudioProperty).ToArray();
+        List<SoundInstanceEditorAudioProperty> audioProperties = new List<SoundInstanceEditorAudioProperty>();
+        for(int i = 0; i < filteredTemplates.Length; i++)
+        {
+            SoundInstanceEditorAudioProperty newAudioProperty = new SoundInstanceEditorAudioProperty();
+            newAudioProperty.SetAudioPropertyFromPropertyTemplate(filteredTemplates[i]);
+            audioProperties.Add(newAudioProperty);
+        }
+        return audioProperties;
     }
 
     private List<SoundInstanceEditorAudioProperty> RetrieveAudioPropertiesFromPropertiesList()
@@ -212,7 +201,7 @@ public class SoundInstanceEditorObjectFmod : SoundInstanceEditorObject
 
     private void SetupScriptReflectionInfosFromAudioProperties()
     {
-        editor.reflectionScriptProperties = new PropertyInfo[this.AudioProperties.Count];
+        editor.ReflectionScriptProperties = new PropertyInfo[this.AudioProperties.Count];
         for (int i = 0; i < this.AudioProperties.Count; i++) {
             SoundInstanceEditorAudioProperty property = this.AudioProperties[i];
 
@@ -220,7 +209,7 @@ public class SoundInstanceEditorObjectFmod : SoundInstanceEditorObject
             // this is optional. if the property doesnt exists, the external script will not controll the property
             // and so only manual mainpulation through the inspector will work
             PropertyInfo p = editor.reflectionScriptType != null ? editor.reflectionScriptType.GetProperty(property.propertyName, BindingFlags.Instance | BindingFlags.Public | BindingFlags.IgnoreCase) : null;
-            if(p != null) editor.reflectionScriptProperties[i] = p;
+            if(p != null) editor.ReflectionScriptProperties[i] = p;
         }
     }
 }

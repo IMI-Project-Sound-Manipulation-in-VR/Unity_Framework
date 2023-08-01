@@ -3,6 +3,7 @@ using System.Linq;
 using System.Collections.Generic;
 using System.Reflection;
 using UnityEngine;
+using System;
 
 public class SoundInstanceEditorObjectUnity : SoundInstanceEditorObject
 {
@@ -24,13 +25,39 @@ public class SoundInstanceEditorObjectUnity : SoundInstanceEditorObject
 
     public override void SetAudioPropertiesFromPreset()
     {
-        SoundInstanceEditorAudioPropertyPreset propertyPreset = this.propertyPresets[this.selectedPropertyPresetIndex];
+        SoundInstanceEditorAudioPropertyPreset propertyPreset = this.PropertyPresets[this.SelectedPropertyPresetIndex];
         if(propertyPreset.propertiesArray.Length == 0) {
             this.AudioProperties = new List<SoundInstanceEditorAudioProperty>();
         } else {
-            this.AudioProperties = propertyPreset.propertiesArray.ToList();
+            this.AudioProperties = RetrieveAudioPropertiesFromPreset();
         }
         SetAudioProperties();
+    }
+
+    private List<SoundInstanceEditorAudioProperty> RetrieveAudioPropertiesFromTemplates()
+    {
+        SoundInstanceEditorAudioPropertyTemplate[] filteredTemplates = this.PropertyTemplates.Where(obj => obj.propertyData.propertyType == SoundInstanceEditorAudioPropertyType.FmodAudioProperty).ToArray();
+        List<SoundInstanceEditorAudioProperty> audioProperties = new List<SoundInstanceEditorAudioProperty>();
+        for(int i = 0; i < filteredTemplates.Length; i++)
+        {
+            SoundInstanceEditorAudioProperty newAudioProperty = new SoundInstanceEditorAudioProperty();
+            newAudioProperty.SetAudioPropertyFromPropertyTemplate(filteredTemplates[i]);
+            audioProperties.Add(newAudioProperty);
+        }
+        return audioProperties;
+    }
+
+    private List<SoundInstanceEditorAudioProperty> RetrieveAudioPropertiesFromPreset()
+    {
+        SoundInstanceEditorAudioProperty[] propertiesArray = this.PropertyPresets[this.SelectedPropertyPresetIndex].propertiesArray;
+        List<SoundInstanceEditorAudioProperty> audioProperties = new List<SoundInstanceEditorAudioProperty>();
+        for(int i = 0; i < propertiesArray.Length; i++)
+        {
+            SoundInstanceEditorAudioProperty newAudioProperty = new SoundInstanceEditorAudioProperty();
+            newAudioProperty.SetAudioPropertyFromAudioProperty(propertiesArray[i]);
+            audioProperties.Add(newAudioProperty);
+        }
+        return audioProperties;
     }
 
     public override void SetupAudioReference()
@@ -45,8 +72,7 @@ public class SoundInstanceEditorObjectUnity : SoundInstanceEditorObject
         base.SetAudioProperties();
 
         if(this.AudioProperties == null) { this.AudioProperties = new List<SoundInstanceEditorAudioProperty>(); }
-
-        this.AudioPropertyFoldouts = new bool[this.AudioProperties.Count];
+        
         FindCorrespondingAudioPropertyInfo();
 
     }
@@ -55,7 +81,7 @@ public class SoundInstanceEditorObjectUnity : SoundInstanceEditorObject
     {
         base.AddNewAudioProperty();
 
-        SoundInstanceEditorAudioPropertyTemplate template = this.PropertyTemplates[this.selectedPropertyTemplateIndex];
+        SoundInstanceEditorAudioPropertyTemplate template = this.PropertyTemplates[this.SelectedPropertyTemplateIndex];
         SoundInstanceEditorAudioProperty newAudioProperty = new SoundInstanceEditorAudioProperty();
         newAudioProperty.SetAudioPropertyFromPropertyTemplate(template);
         this.AudioProperties.Add(newAudioProperty);
@@ -71,13 +97,6 @@ public class SoundInstanceEditorObjectUnity : SoundInstanceEditorObject
 
         SetAudioProperties();
     }
-    
-    public override void LoadPropertyPresets()
-    {
-        base.LoadPropertyPresets();
-
-        this.propertyPresets = Resources.LoadAll<SoundInstanceEditorAudioPropertyPreset>("Audio Property Presets");
-    }
 
     public override void LoadPropertyTemplates()
     {
@@ -85,8 +104,7 @@ public class SoundInstanceEditorObjectUnity : SoundInstanceEditorObject
 
         // loads property templates, which are responsible for manipulating properties of a audio source object with additional options
         // the templates setup default values, such as default input value, max and min values and a curve object.
-        List<SoundInstanceEditorAudioPropertyTemplate> allTemplates = Resources.LoadAll<SoundInstanceEditorAudioPropertyTemplate>("Audio Property Templates").ToList();
-        this.PropertyTemplates = allTemplates.Where(obj => obj.propertyData.propertyType == SoundInstanceEditorAudioPropertyType.UnityAudioProperty).ToArray();
+        this.PropertyTemplates = this.PropertyTemplates.Where(obj => obj.propertyData.propertyType == SoundInstanceEditorAudioPropertyType.UnityAudioProperty).ToArray();
     }
 
     public override void SetAudioPropertyValue(SoundInstanceEditorAudioProperty property, int index, float value)
@@ -131,11 +149,7 @@ public class SoundInstanceEditorObjectUnity : SoundInstanceEditorObject
         }
     }
 
-    // Public
-
-    // Private
-
-    private void SetInstanceName()
+    public override void SetInstanceName()
     {
         this.InstanceName = editor.AudioSourceReference.clip.name;
     }
@@ -149,7 +163,7 @@ public class SoundInstanceEditorObjectUnity : SoundInstanceEditorObject
             reflectionAudioPropertyInfos = new PropertyInfo[this.AudioProperties.Count];
 
             // the properties of the script. these will hold the properties, from which this script can retrieves values automatically
-            editor.reflectionScriptProperties = new PropertyInfo[this.AudioProperties.Count];
+            editor.ReflectionScriptProperties = new PropertyInfo[this.AudioProperties.Count];
 
             // for each property available in the preset
             for (int i = 0; i < this.AudioProperties.Count; i++) {
@@ -165,7 +179,7 @@ public class SoundInstanceEditorObjectUnity : SoundInstanceEditorObject
 
                 // assign the property infos if they exist
                 if(f != null) reflectionAudioPropertyInfos[i] = f;
-                if(p != null) editor.reflectionScriptProperties[i] = p;
+                if(p != null) editor.ReflectionScriptProperties[i] = p;
             }
         }
 
